@@ -9,7 +9,6 @@
 #include <fcntl.h>
 #include <arpa/inet.h>
 
-// ???? remove all printfs and scanfs
 #define MAX_BUFF 100
 #define FILE_MAX_BUFF 100
 
