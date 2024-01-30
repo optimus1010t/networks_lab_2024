@@ -1,15 +1,20 @@
-queries:
-    HELO, MAIL, RCPT DATA, QUIT protocol info
-    does the server check for mailboxes of recievers and senders; checking domain
-    what is <CR><LF> and how are lines getting terminated
-    how do we get to know that the entire thing is recieved like what is the EOF?
+to-do:
+    look at multiline output from the server
+    case-insensitive
+    add conditions to check if there is < and > such that not get stuck in a forever loop
 
-    what should be the buffer/packet size over tcp -- keeping it to be 100
+queries:
+    HELO, MAIL, RCPT, DATA, QUIT protocol info
+    does the server check for mailboxes of recievers and senders; checking domain
+
+
 
 smtpsmail.c
     implementing timeouts
 
 mailclinet.c
-    send port number through cmd arg
 
 popserver.c
+
+how do we get to know that the entire thing is recieved like what is the EOF? -- \r\n
+what should be the buffer/packet size over tcp -- 4000, added other constraints too
