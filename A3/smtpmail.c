@@ -211,11 +211,12 @@ int main()
             }
             memset(buf, 0, sizeof(buf)); fprintf(buf, "354 Enter mail, end with \".\" on a line by itself\r\n");
             send(newsockfd, buf, strlen(buf), 0);
+            char mail[MAX_MAIL]; memset(mail, 0, sizeof(mail));
             while (1) {
                 char temp_buf[MAX_MAIL]; memset(temp_buf, 0, sizeof(temp_buf));
                 n = recv(sockfd, temp_buf, MAX_BUFF, 0);
-                strcat(buf, temp_buf);
-                if (buf[strlen(buf)-3] == '.' && buf[strlen(buf)-2] == '\r' && buf[strlen(buf)-1] == '\n') {
+                strcat(mail, temp_buf);
+                if (mail[strlen(mail)-3] == '.' && mail[strlen(mail)-2] == '\r' && mail[strlen(mail)-1] == '\n' && strlen(temp_buf) == 3) {
                     break;
                 }
             }
@@ -224,7 +225,7 @@ int main()
             char from[MAX_MAILID]; memset(from, 0, sizeof(from));
             char subject[MAX_BUFF]; memset(subject, 0, sizeof(subject));
             char message[MAX_MAIL]; memset(message, 0, sizeof(message));
-            char *token = strtok(buf, "\r\n");
+            char *token = strtok(mail, "\r\n");
             int flag_to = 0, flag_from = 0, flag_subject = 0, flag_message = 0;
             while (token != NULL) {
                 if (strncmp(token, "To: ", 4) == 0) {
