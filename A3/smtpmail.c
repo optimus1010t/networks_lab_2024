@@ -18,8 +18,16 @@
 #define MAX_MAILID 650
 
 // In accordance wirh RFC 5321 and RFC 1939
-int main()
+int main(int argc, char*argv[])
 {
+    int smtp_port;
+    if ( argc != 2 ) {
+        printf("Usage: ./smtpmail <smtp_port>\n");
+        exit(0);
+    }
+    else {
+        smtp_port = atoi(argv[1]);
+    }
 	int	sockfd, newsockfd ; /* Socket descriptors */
 	int	clilen;
 	struct sockaddr_in	cli_addr, serv_addr;
@@ -31,7 +39,7 @@ int main()
 
 	serv_addr.sin_family		= AF_INET;
 	serv_addr.sin_addr.s_addr	= INADDR_ANY;
-	serv_addr.sin_port		    = htons(20000);
+	serv_addr.sin_port		    = htons(smtp_port);
 
 	if (bind(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) {
 		printf("Unable to bind local address\n");
@@ -137,12 +145,12 @@ int main()
                 j++;
             }   domain_recv2[j] = '\0';
             // check if the domain is same as the one in HELO command
-            if (strcmp(domain_recv, domain_recv2) != 0) {
-                memset(buf, 0, sizeof(buf)); sprintf(buf, "501 Syntax error in parameters or arguments\r\n");
-                send(newsockfd, buf, strlen(buf), 0);
-                close(newsockfd);
-                exit(0);
-            }
+            // if (strcmp(domain_recv, domain_recv2) != 0) {
+            //     memset(buf, 0, sizeof(buf)); sprintf(buf, "501 Syntax error in parameters or arguments\r\n");
+            //     send(newsockfd, buf, strlen(buf), 0);
+            //     close(newsockfd);
+            //     exit(0);
+            // }
             memset(buf, 0, sizeof(buf)); sprintf(buf, "250 <%s@%s> ... Sender OK\r\n", username, domain_recv2);
             send(newsockfd, buf, strlen(buf), 0);
             memset(buf, 0, sizeof(buf));

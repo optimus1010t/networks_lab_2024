@@ -218,14 +218,6 @@ int main(int argc, char*argv[]) {
                     i++;
                     j++;
                 }   recv_domain[j] = '\0';
-
-                // printf("sender: %s\n", sender);
-                // printf("send_domain: %s\n", send_domain);
-                // printf("receiver: %s\n", receiver);
-                // printf("recv_domain: %s\n", recv_domain);
-                // printf("subject: %s\n", subject);
-                // printf("mail_body: %s\n", mail_body);
-
                 
                 int	sockfd ;
                 struct sockaddr_in	serv_addr;
