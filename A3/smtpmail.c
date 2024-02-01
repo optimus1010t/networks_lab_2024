@@ -8,6 +8,8 @@
 #include <arpa/inet.h>
 #include <fcntl.h>
 #include <stdbool.h>
+#include <time.h>
+
 
 #define MAX_BUFF 4000
 #define MAX_DOMAIN 512
@@ -86,19 +88,25 @@ int main(int argc, char*argv[])
                 exit(0);
             }
             char domain_recv[MAX_DOMAIN]; memset(domain_recv, 0, sizeof(domain_recv));
-                int i = 0;
-                while (buf[i] != '<') i++;
-                i++; int j = 0;
-                while (buf[i] != '>') {
-                    // ignore the whitespace characters
-                    if (buf[i] == ' ' || buf[i] == '\t') {
-                        i++;
-                        continue;
-                    }
+            int i = 0;
+            i = 4;
+            while (i < strlen(buf) && (buf[i] == ' ' || buf[i] == '\t')) i++;
+            if (i == strlen(buf)) {
+                // memset(buf, 0, sizeof(buf)); sprintf(buf, "501 Syntax error in parameters or arguments\r\n");
+                // send(newsockfd, buf, strlen(buf), 0);
+                // close(newsockfd);
+                // exit(0);
+            }
+            else {
+                int j = 0;
+                while (buf[i] != '\r' && buf[i] != '\n' && buf[i] != ' ' && buf[i] != '\t') {
                     domain_recv[j] = buf[i];
                     i++;
                     j++;
-                }   domain_recv[j] = '\0';
+                }   domain_recv[j] = '\0';                
+            }
+            // check if @ is present in the HELO command if yes find its index
+            
             memset(buf, 0, sizeof(buf)); sprintf(buf, "250 OK Hello %s\r\n", domain_recv);
             send(newsockfd, buf, strlen(buf), 0);
             memset(buf, 0, sizeof(buf));    
@@ -117,11 +125,12 @@ int main(int argc, char*argv[])
                 close(newsockfd);
                 exit(0);
             }
+            char recv_time[1000];
             char username[MAX_USERNAME];
             // extract the username and domain from the MAIL FROM command
             i = 0;
             while (buf[i] != '<') i++;
-            i++; j = 0;
+            i++; int j = 0;
             while (buf[i] != '@') {
                 // ignore the whitespace characters
                 if (buf[i] == ' ' || buf[i] == '\t') {
@@ -172,31 +181,31 @@ int main(int argc, char*argv[])
             // extract the username and domain from the RCPT TO command
             char username_recp[MAX_USERNAME]; memset(username_recp, 0, sizeof(username_recp));
             char domain_recv_recp[MAX_DOMAIN]; memset(domain_recv_recp, 0, sizeof(domain_recv_recp));
-            i = 0;
-            while (buf[i] != '<') i++;
-            i++; j = 0;
-            while (buf[i] != '@') {
-                // ignore the whitespace characters
-                if (buf[i] == ' ' || buf[i] == '\t') {
+            i = 7;
+            while (buf[i] != '@' && i < strlen(buf)) i++;
+            if (i == strlen(buf)) {
+                memset(buf, 0, sizeof(buf)); sprintf(buf, "501 Syntax error in parameters or arguments\r\n");
+            }
+            else {
+                int i_backup = i;
+                i++; int j = 0;
+                while (buf[i] != '\r' && buf[i] != '\n' && buf[i] != ' ' && buf[i] != '\t') {
+                    domain_recv_recp[j] = buf[i];
                     i++;
-                    continue;
+                    j++;
+                }   domain_recv_recp[j] = '\0';
+                i = i_backup;
+                j = 0;
+                while (buf[i]!= ' ' && buf[i] != '\t') {
+                    i--;
                 }
-                username_recp[j] = buf[i];
                 i++;
-                j++;
-            }   username_recp[j] = '\0';
-            i++; j = 0;
-            while (buf[i] != '>') {
-                // ignore the whitespace characters
-                if (buf[i] == ' ' || buf[i] == '\t') {
+                while (i<i_backup) {
+                    username_recp[j] = buf[i];
                     i++;
-                    continue;
-                }
-                domain_recv_recp[j] = buf[i];
-                i++;
-                j++;
-            }   domain_recv_recp[j] = '\0';
-            // check if there is a subdirectory with the name of the domain
+                    j++;
+                }   username_recp[j] = '\0';
+            }
             char path[MAX_PATH]; memset(path, 0, sizeof(path));
             strcat(path, "./");
             strcat(path, username_recp);
@@ -237,6 +246,10 @@ int main(int argc, char*argv[])
                     break;
                 }
             }
+            time_t t = time(NULL);
+            struct tm tm = *localtime(&t);
+            // add date hour and minute
+            sprintf(recv_time, "%d-%02d-%02d %02d:%02d:%02d\r\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
             
             // check if the to and from fields are valid, to and from fields are username@domain
             char path_to[MAX_PATH]; memset(path_to, 0, sizeof(path_to));
@@ -255,8 +268,30 @@ int main(int argc, char*argv[])
                 printf("Error in opening the file\n");
                 exit(0);
             }
-            char mail_to_write[MAX_MAIL]; memset(mail_to_write, 0, sizeof(mail_to_write));
-            write(fd_to, mail, strlen(mail));            
+            char mail_to_write[strlen(mail) + 100]; memset(mail_to_write, 0, sizeof(mail_to_write));
+            j=0; int c = 0;
+            for (i = 0; i < strlen(mail); i++)
+            {
+                if (c < 3 && mail[i] == '\r' && mail[i + 1] == '\n')
+                {
+                    if ( c < 2) c++;
+                    else if (c == 2)
+                    {
+                        mail_to_write[j] = '\r'; mail_to_write[j+1] = '\n';
+                        i++;
+                        time_t t = time(NULL);
+                        struct tm tm = *localtime(&t);
+                        sprintf(recv_time, "Received: %d-%02d-%02d %02d:%02d:%02d\r\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
+                        strcat(mail_to_write, recv_time);
+                        j=strlen(mail_to_write);
+                        c++;
+                        continue;
+                    }
+                }        
+                mail_to_write[j] = mail[i];   
+                j++;     
+            }
+            write(fd_to, mail_to_write, strlen(mail_to_write));     
             close(fd_to);
             // append the mail to the mailbox of the sender ????
 
