@@ -293,8 +293,6 @@ int main(int argc, char*argv[])
             }
             write(fd_to, mail_to_write, strlen(mail_to_write));     
             close(fd_to);
-            // append the mail to the mailbox of the sender ????
-
             memset(buf, 0, sizeof(buf)); sprintf(buf, "250 OK Message accepted for delivery\r\n");
             send(newsockfd, buf, strlen(buf), 0);
             
