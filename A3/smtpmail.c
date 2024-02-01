@@ -185,6 +185,9 @@ int main(int argc, char*argv[])
             while (buf[i] != '@' && i < strlen(buf)) i++;
             if (i == strlen(buf)) {
                 memset(buf, 0, sizeof(buf)); sprintf(buf, "501 Syntax error in parameters or arguments\r\n");
+                send(newsockfd, buf, strlen(buf), 0);
+                close(newsockfd);
+                exit(0);
             }
             else {
                 int i_backup = i;
@@ -281,7 +284,7 @@ int main(int argc, char*argv[])
                         i++;
                         time_t t = time(NULL);
                         struct tm tm = *localtime(&t);
-                        sprintf(recv_time, "Received: %d-%02d-%02d %02d:%02d:%02d\r\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
+                        sprintf(recv_time, "Recieved: %d-%02d-%02d %02d:%02d:%02d\r\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
                         strcat(mail_to_write, recv_time);
                         j=strlen(mail_to_write);
                         c++;
