@@ -1,0 +1,65 @@
+// check if the to, from and subject fields are present in proper order
+            char to[MAX_MAILID]; memset(to, 0, sizeof(to));
+            char from[MAX_MAILID]; memset(from, 0, sizeof(from));
+            char subject[MAX_BUFF]; memset(subject, 0, sizeof(subject));
+            char message[MAX_MAIL]; memset(message, 0, sizeof(message));
+            char *token = strtok(mail, "\r\n");
+            int flag_to = 0, flag_from = 0, flag_subject = 0, flag_message = 0;
+            while (token != NULL) {
+                if (strncmp(token, "To: ", 4) == 0) {
+                    flag_to = 1;
+                    strcat(to, token+4);
+                }
+                else if (strncmp(token, "From: ", 6) == 0) {
+                    flag_from = 1;
+                    strcat(from, token+6);
+                }
+                else if (strncmp(token, "Subject: ", 9) == 0) {
+                    flag_subject = 1;
+                    strcat(subject, token+9);
+                }
+                else {
+                    flag_message = 1;
+                    strcat(message, token);
+                }
+                token = strtok(NULL, "\r\n");
+            }
+            if (flag_to == 0 || flag_from == 0 || flag_subject == 0 || flag_message == 0) {
+                memset(buf, 0, sizeof(buf)); sprintf(buf, "500 Syntax error: command unrecognized\r\n");
+                send(newsockfd, buf, strlen(buf), 0);
+                close(newsockfd);
+                exit(0);
+            }
+            // check if the to and from fields are valid, to and from fields are username@domain
+            char username_to[MAX_USERNAME]; memset(username_to, 0, sizeof(username_to));
+            char domain_to[MAX_DOMAIN]; memset(domain_to, 0, sizeof(domain_to));
+            char username_from[MAX_USERNAME]; memset(username_from, 0, sizeof(username_from));
+            char domain_from[MAX_DOMAIN]; memset(domain_from, 0, sizeof(domain_from));
+            i = 0;
+            while (to[i] != '@') {
+                username_to[i] = to[i];
+                i++;
+            }   username_to[i] = '\0';
+            i++; j = 0;
+            while (to[i] != '\0') {
+                domain_to[j] = to[i];
+                i++;
+                j++;
+            }   domain_to[j] = '\0';
+            i = 0;
+            while (from[i] != '@') {
+                username_from[i] = from[i];
+                i++;
+            }   username_from[i] = '\0';
+            i++; j = 0;
+            while (from[i] != '\0') {
+                domain_from[j] = from[i];
+                i++;
+                j++;
+            }   domain_from[j] = '\0';
+            if (strcmp(domain_to, domain_recv_recp) != 0 || strcmp(domain_from, domain_recv) != 0) {
+                memset(buf, 0, sizeof(buf)); sprintf(buf, "501 Syntax error in parameters or arguments\r\n");
+                send(newsockfd, buf, strlen(buf), 0);
+                close(newsockfd);
+                exit(0);
+            }

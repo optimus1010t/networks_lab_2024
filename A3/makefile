@@ -1,12 +1,12 @@
 mailclient:
 	rm -f mailclient
-	gcc mailclient.c -o mailclient
+	gcc -O0 mailclient.c -o mailclient
 	clear
-	./mailclient
+	./mailclient 127.0.0.0.1 20000 20000
 
 smtpmail:
 	rm -f smtpmail
-	gcc smtpmail.c -o smtpmail
+	gcc -O0 smtpmail.c -o smtpmail 
 	clear
 	./smtpmail
 

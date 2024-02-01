@@ -7,6 +7,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <fcntl.h>
+#include <stdbool.h>
 
 #define MAX_BUFF 4000
 #define MAX_DOMAIN 512
@@ -37,7 +38,7 @@ int main()
 	listen(sockfd, 5);
 
     char domain[MAX_DOMAIN] = "iitkgp.edu\0";
-    char service_ready[100]; fprintf(service_ready, "220 <%s> Service ready\r\n", domain);
+    char service_ready[100]; sprintf(service_ready, "220 <%s> Service ready\r\n", domain);
 
 	while (1) {
         int n;
@@ -50,20 +51,22 @@ int main()
 		}
 		if (fork() == 0) {
 			close(sockfd);
-            memset(buf, 0, sizeof(buf)); fprintf(buf, "%s", service_ready);
+            memset(buf, 0, sizeof(buf)); sprintf(buf, "%s", service_ready);
             send(newsockfd, buf, strlen(buf), 0);
+                printf("\t%s\n", buf);
             memset(buf, 0, sizeof(buf));
 			while (1) {
                 char temp_buf[MAX_BUFF]; memset(temp_buf, 0, sizeof(temp_buf));
-                n = recv(sockfd, temp_buf, MAX_BUFF, 0);
+                n = recv(newsockfd, temp_buf, MAX_BUFF, 0);
                 strcat(buf, temp_buf);
                 if (buf[strlen(buf)-2] == '\r' && buf[strlen(buf)-1] == '\n') {
                     break;
                 }
             }
+                printf("\t%s\n", buf);
             // check if the first four characters are HELO
             if (strncmp(buf, "HELO", 4) != 0) {
-                memset(buf, 0, sizeof(buf)); fprintf(buf, "500 Syntax error: command unrecognized\r\n");
+                memset(buf, 0, sizeof(buf)); sprintf(buf, "500 Syntax error: command unrecognized\r\n");
                 send(newsockfd, buf, strlen(buf), 0);
                 close(newsockfd);
                 exit(0);
@@ -82,20 +85,22 @@ int main()
                     i++;
                     j++;
                 }   domain_recv[j] = '\0';
-            memset(buf, 0, sizeof(buf)); fprintf(buf, "250 OK Hello %s\r\n", domain_recv);
+            memset(buf, 0, sizeof(buf)); sprintf(buf, "250 OK Hello %s\r\n", domain_recv);
             send(newsockfd, buf, strlen(buf), 0);
-            memset(buf, 0, sizeof(buf));
+            memset(buf, 0, sizeof(buf));    
+                printf("\t%s\n", buf);
             while (1) {
                 char temp_buf[MAX_BUFF]; memset(temp_buf, 0, sizeof(temp_buf));
-                n = recv(sockfd, temp_buf, MAX_BUFF, 0);
+                n = recv(newsockfd, temp_buf, MAX_BUFF, 0);
                 strcat(buf, temp_buf);
                 if (buf[strlen(buf)-2] == '\r' && buf[strlen(buf)-1] == '\n') {
                     break;
                 }
             }
+                printf("\t%s\n", buf);
             // check if the first four characters are MAIL
             if (strncmp(buf, "MAIL", 4) != 0) {
-                memset(buf, 0, sizeof(buf)); fprintf(buf, "500 Syntax error: command unrecognized\r\n");
+                memset(buf, 0, sizeof(buf)); sprintf(buf, "500 Syntax error: command unrecognized\r\n");
                 send(newsockfd, buf, strlen(buf), 0);
                 close(newsockfd);
                 exit(0);
@@ -129,45 +134,47 @@ int main()
             }   domain_recv2[j] = '\0';
             // check if the domain is same as the one in HELO command
             if (strcmp(domain_recv, domain_recv2) != 0) {
-                memset(buf, 0, sizeof(buf)); fprintf(buf, "501 Syntax error in parameters or arguments\r\n");
+                memset(buf, 0, sizeof(buf)); sprintf(buf, "501 Syntax error in parameters or arguments\r\n");
                 send(newsockfd, buf, strlen(buf), 0);
                 close(newsockfd);
                 exit(0);
             }
-            memset(buf, 0, sizeof(buf)); fprintf(buf, "250 <%s@%s> ... Sender OK\r\n");
+            memset(buf, 0, sizeof(buf)); sprintf(buf, "250 <%s@%s> ... Sender OK\r\n", username, domain_recv2);
             send(newsockfd, buf, strlen(buf), 0);
+                printf("\t%s\n", buf);
             memset(buf, 0, sizeof(buf));
             while (1) {
                 char temp_buf[MAX_BUFF]; memset(temp_buf, 0, sizeof(temp_buf));
-                n = recv(sockfd, temp_buf, MAX_BUFF, 0);
+                n = recv(newsockfd, temp_buf, MAX_BUFF, 0);
                 strcat(buf, temp_buf);
                 if (buf[strlen(buf)-2] == '\r' && buf[strlen(buf)-1] == '\n') {
                     break;
                 }
             }
+                printf("\t%s\n", buf);
             // check if the first four characters are RCPT
             if (strncmp(buf, "RCPT", 4) != 0) {
-                memset(buf, 0, sizeof(buf)); fprintf(buf, "500 Syntax error: command unrecognized\r\n");
+                memset(buf, 0, sizeof(buf)); sprintf(buf, "500 Syntax error: command unrecognized\r\n");
                 send(newsockfd, buf, strlen(buf), 0);
                 close(newsockfd);
                 exit(0);
             }
             // extract the username and domain from the RCPT TO command
+            char username_recp[MAX_USERNAME]; memset(username_recp, 0, sizeof(username_recp));
+            char domain_recv_recp[MAX_DOMAIN]; memset(domain_recv_recp, 0, sizeof(domain_recv_recp));
             i = 0;
             while (buf[i] != '<') i++;
             i++; j = 0;
-            char username_recp[MAX_USERNAME]; memset(username_recp, 0, sizeof(username_recp));
-            char domain_recv_recp[MAX_DOMAIN]; memset(domain_recv_recp, 0, sizeof(domain_recv_recp));
             while (buf[i] != '@') {
                 // ignore the whitespace characters
                 if (buf[i] == ' ' || buf[i] == '\t') {
                     i++;
                     continue;
                 }
-                username[j] = buf[i];
+                username_recp[j] = buf[i];
                 i++;
                 j++;
-            }   username[j] = '\0';
+            }   username_recp[j] = '\0';
             i++; j = 0;
             while (buf[i] != '>') {
                 // ignore the whitespace characters
@@ -182,120 +189,60 @@ int main()
             // check if there is a subdirectory with the name of the domain
             char path[MAX_PATH]; memset(path, 0, sizeof(path));
             strcat(path, "./");
-            strcat(path, domain_recv_recp);
+            strcat(path, username_recp);
             if (access(path, F_OK) == -1) {
-                memset(buf, 0, sizeof(buf)); fprintf(buf, "550 No such user here\r\n");
+                memset(buf, 0, sizeof(buf)); sprintf(buf, "550 No such user here\r\n");
                 send(newsockfd, buf, strlen(buf), 0);
                 close(newsockfd);
                 exit(0);
             }
             // some recipients checks !! ????
-            memset(buf, 0, sizeof(buf)); fprintf(buf, "250 <%s@%s> ... Recipient OK\r\n", username, domain_recv_recp);
+            memset(buf, 0, sizeof(buf)); sprintf(buf, "250 <%s@%s> ... Recipient OK\r\n", username_recp, domain_recv_recp);
             send(newsockfd, buf, strlen(buf), 0);
+                printf("\t%s\n", buf);
 
             memset(buf, 0, sizeof(buf));
             while (1) {
                 char temp_buf[MAX_BUFF]; memset(temp_buf, 0, sizeof(temp_buf));
-                n = recv(sockfd, temp_buf, MAX_BUFF, 0);
+                n = recv(newsockfd, temp_buf, MAX_BUFF, 0);
                 strcat(buf, temp_buf);
                 if (buf[strlen(buf)-2] == '\r' && buf[strlen(buf)-1] == '\n') {
                     break;
                 }
             }
+                printf("\t%s\n", buf);  
             // check if the first four characters are DATA
             if (strncmp(buf, "DATA", 4) != 0) {
-                memset(buf, 0, sizeof(buf)); fprintf(buf, "500 Syntax error: command unrecognized\r\n");
+                memset(buf, 0, sizeof(buf)); sprintf(buf, "500 Syntax error: command unrecognized\r\n");
                 send(newsockfd, buf, strlen(buf), 0);
                 close(newsockfd);
                 exit(0);
             }
-            memset(buf, 0, sizeof(buf)); fprintf(buf, "354 Enter mail, end with \".\" on a line by itself\r\n");
+            memset(buf, 0, sizeof(buf)); sprintf(buf, "354 Enter mail, end with \".\" on a line by itself\r\n");
             send(newsockfd, buf, strlen(buf), 0);
+                printf("\t%s\n", buf);
             char mail[MAX_MAIL]; memset(mail, 0, sizeof(mail));
             while (1) {
-                char temp_buf[MAX_MAIL]; memset(temp_buf, 0, sizeof(temp_buf));
-                n = recv(sockfd, temp_buf, MAX_BUFF, 0);
+                char temp_buf[MAX_BUFF]; memset(temp_buf, 0, sizeof(temp_buf));
+                n = recv(newsockfd, temp_buf, MAX_BUFF, 0);
                 strcat(mail, temp_buf);
-                if (mail[strlen(mail)-3] == '.' && mail[strlen(mail)-2] == '\r' && mail[strlen(mail)-1] == '\n' && strlen(temp_buf) == 3) {
+                if (mail[strlen(mail)-5] == '\r' && mail[strlen(mail)-4] == '\n' && mail[strlen(mail)-3] == '.' && mail[strlen(mail)-2] == '\r' && mail[strlen(mail)-1] == '\n') {
                     break;
                 }
             }
-            // check if the to, from and subject fields are present in proper order
-            char to[MAX_MAILID]; memset(to, 0, sizeof(to));
-            char from[MAX_MAILID]; memset(from, 0, sizeof(from));
-            char subject[MAX_BUFF]; memset(subject, 0, sizeof(subject));
-            char message[MAX_MAIL]; memset(message, 0, sizeof(message));
-            char *token = strtok(mail, "\r\n");
-            int flag_to = 0, flag_from = 0, flag_subject = 0, flag_message = 0;
-            while (token != NULL) {
-                if (strncmp(token, "To: ", 4) == 0) {
-                    flag_to = 1;
-                    strcat(to, token+4);
-                }
-                else if (strncmp(token, "From: ", 6) == 0) {
-                    flag_from = 1;
-                    strcat(from, token+6);
-                }
-                else if (strncmp(token, "Subject: ", 9) == 0) {
-                    flag_subject = 1;
-                    strcat(subject, token+9);
-                }
-                else {
-                    flag_message = 1;
-                    strcat(message, token);
-                }
-                token = strtok(NULL, "\r\n");
-            }
-            if (flag_to == 0 || flag_from == 0 || flag_subject == 0 || flag_message == 0) {
-                memset(buf, 0, sizeof(buf)); fprintf(buf, "500 Syntax error: command unrecognized\r\n");
-                send(newsockfd, buf, strlen(buf), 0);
-                close(newsockfd);
-                exit(0);
-            }
-            // check if the to and from fields are valid, to and from fields are username@domain
-            char username_to[MAX_USERNAME]; memset(username_to, 0, sizeof(username_to));
-            char domain_to[MAX_DOMAIN]; memset(domain_to, 0, sizeof(domain_to));
-            char username_from[MAX_USERNAME]; memset(username_from, 0, sizeof(username_from));
-            char domain_from[MAX_DOMAIN]; memset(domain_from, 0, sizeof(domain_from));
-            i = 0;
-            while (to[i] != '@') {
-                username_to[i] = to[i];
-                i++;
-            }   username_to[i] = '\0';
-            i++; j = 0;
-            while (to[i] != '\0') {
-                domain_to[j] = to[i];
-                i++;
-                j++;
-            }   domain_to[j] = '\0';
-            i = 0;
-            while (from[i] != '@') {
-                username_from[i] = from[i];
-                i++;
-            }   username_from[i] = '\0';
-            i++; j = 0;
-            while (from[i] != '\0') {
-                domain_from[j] = from[i];
-                i++;
-                j++;
-            }   domain_from[j] = '\0';
-            if (strcmp(domain_to, domain_recv_recp) != 0 || strcmp(domain_from, domain_recv) != 0) {
-                memset(buf, 0, sizeof(buf)); fprintf(buf, "501 Syntax error in parameters or arguments\r\n");
-                send(newsockfd, buf, strlen(buf), 0);
-                close(newsockfd);
-                exit(0);
-            }
+                printf("\t%s\n", mail);
+            
             // check if the to and from fields are valid, to and from fields are username@domain
             char path_to[MAX_PATH]; memset(path_to, 0, sizeof(path_to));
             strcat(path_to, "./");
-            strcat(path_to, domain_recv_recp);
+            strcat(path_to, username_recp);
             strcat(path_to, "/");
             strcat(path_to, "mymailbox.txt");
-            char path_from[MAX_PATH]; memset(path_from, 0, sizeof(path_from));
-            strcat(path_from, "./");
-            strcat(path_from, domain_recv);
-            strcat(path_from, "/");
-            strcat(path_from, "mymailbox.txt");
+            // char path_from[MAX_PATH]; memset(path_from, 0, sizeof(path_from));
+            // strcat(path_from, "./");
+            // strcat(path_from, domain_recv);
+            // strcat(path_from, "/");
+            // strcat(path_from, "mymailbox.txt");
             // append the mail to the mailbox of the recipient
             int fd_to = open(path_to, O_WRONLY | O_APPEND);
             if (fd_to == -1) {
@@ -303,28 +250,17 @@ int main()
                 exit(0);
             }
             char mail_to_write[MAX_MAIL]; memset(mail_to_write, 0, sizeof(mail_to_write));
-            strcat(mail_to_write, "From: ");
-            strcat(mail_to_write, from);
-            strcat(mail_to_write, "\r\n");
-            strcat(mail_to_write, "To: ");
-            strcat(mail_to_write, to);
-            strcat(mail_to_write, "\r\n");
-            strcat(mail_to_write, "Subject: ");
-            strcat(mail_to_write, subject);
-            strcat(mail_to_write, "\r\n");
-            strcat(mail_to_write, message);
-            strcat(mail_to_write, "\r\n");
-            write(fd_to, mail_to_write, strlen(mail_to_write));
+            write(fd_to, mail, strlen(mail));            
             close(fd_to);
             // append the mail to the mailbox of the sender ????
 
-            memset(buf, 0, sizeof(buf)); fprintf(buf, "250 OK Message accepted for delivery\r\n");
+            memset(buf, 0, sizeof(buf)); sprintf(buf, "250 OK Message accepted for delivery\r\n");
             send(newsockfd, buf, strlen(buf), 0);
             
             memset(buf, 0, sizeof(buf));
             while (1) {
                 char temp_buf[MAX_BUFF]; memset(temp_buf, 0, sizeof(temp_buf));
-                n = recv(sockfd, temp_buf, MAX_BUFF, 0);
+                n = recv(newsockfd, temp_buf, MAX_BUFF, 0);
                 strcat(buf, temp_buf);
                 if (buf[strlen(buf)-2] == '\r' && buf[strlen(buf)-1] == '\n') {
                     break;
@@ -332,12 +268,12 @@ int main()
             }
             // check if the first four characters are QUIT
             if (strncmp(buf, "QUIT", 4) != 0) {
-                memset(buf, 0, sizeof(buf)); fprintf(buf, "500 Syntax error: command unrecognized\r\n");
+                memset(buf, 0, sizeof(buf)); sprintf(buf, "500 Syntax error: command unrecognized\r\n");
                 send(newsockfd, buf, strlen(buf), 0);
                 close(newsockfd);
                 exit(0);
             }
-            memset(buf, 0, sizeof(buf)); fprintf(buf, "221 <%s> Service closing transmission channel\r\n", domain);
+            memset(buf, 0, sizeof(buf)); sprintf(buf, "221 <%s> Service closing transmission channel\r\n", domain);
             send(newsockfd, buf, strlen(buf), 0);
             close(newsockfd);
 			exit(0);
