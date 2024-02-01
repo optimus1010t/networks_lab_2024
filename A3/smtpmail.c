@@ -28,14 +28,20 @@ int main()
 		printf("Cannot create socket\n");
 		exit(0);
 	}
+
 	serv_addr.sin_family		= AF_INET;
 	serv_addr.sin_addr.s_addr	= INADDR_ANY;
 	serv_addr.sin_port		    = htons(20000);
+
 	if (bind(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) {
 		printf("Unable to bind local address\n");
 		exit(0);
 	}
-	listen(sockfd, 5);
+
+    if(listen(sockfd, 5) < 0) {
+        printf("Listen error\n");
+        exit(0);
+    }
 
     char domain[MAX_DOMAIN] = "iitkgp.edu\0";
     char service_ready[100]; sprintf(service_ready, "220 <%s> Service ready\r\n", domain);
@@ -43,6 +49,7 @@ int main()
 	while (1) {
         int n;
         char buf[MAX_BUFF]; memset(buf, 0, sizeof(buf));
+
         clilen = sizeof(cli_addr);
 		newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
 		if (newsockfd < 0) {
@@ -53,8 +60,8 @@ int main()
 			close(sockfd);
             memset(buf, 0, sizeof(buf)); sprintf(buf, "%s", service_ready);
             send(newsockfd, buf, strlen(buf), 0);
-                printf("\t%s\n", buf);
             memset(buf, 0, sizeof(buf));
+
 			while (1) {
                 char temp_buf[MAX_BUFF]; memset(temp_buf, 0, sizeof(temp_buf));
                 n = recv(newsockfd, temp_buf, MAX_BUFF, 0);
@@ -63,7 +70,6 @@ int main()
                     break;
                 }
             }
-                printf("\t%s\n", buf);
             // check if the first four characters are HELO
             if (strncmp(buf, "HELO", 4) != 0) {
                 memset(buf, 0, sizeof(buf)); sprintf(buf, "500 Syntax error: command unrecognized\r\n");
@@ -88,7 +94,6 @@ int main()
             memset(buf, 0, sizeof(buf)); sprintf(buf, "250 OK Hello %s\r\n", domain_recv);
             send(newsockfd, buf, strlen(buf), 0);
             memset(buf, 0, sizeof(buf));    
-                printf("\t%s\n", buf);
             while (1) {
                 char temp_buf[MAX_BUFF]; memset(temp_buf, 0, sizeof(temp_buf));
                 n = recv(newsockfd, temp_buf, MAX_BUFF, 0);
@@ -97,7 +102,6 @@ int main()
                     break;
                 }
             }
-                printf("\t%s\n", buf);
             // check if the first four characters are MAIL
             if (strncmp(buf, "MAIL", 4) != 0) {
                 memset(buf, 0, sizeof(buf)); sprintf(buf, "500 Syntax error: command unrecognized\r\n");
@@ -141,7 +145,6 @@ int main()
             }
             memset(buf, 0, sizeof(buf)); sprintf(buf, "250 <%s@%s> ... Sender OK\r\n", username, domain_recv2);
             send(newsockfd, buf, strlen(buf), 0);
-                printf("\t%s\n", buf);
             memset(buf, 0, sizeof(buf));
             while (1) {
                 char temp_buf[MAX_BUFF]; memset(temp_buf, 0, sizeof(temp_buf));
@@ -151,7 +154,6 @@ int main()
                     break;
                 }
             }
-                printf("\t%s\n", buf);
             // check if the first four characters are RCPT
             if (strncmp(buf, "RCPT", 4) != 0) {
                 memset(buf, 0, sizeof(buf)); sprintf(buf, "500 Syntax error: command unrecognized\r\n");
@@ -199,7 +201,6 @@ int main()
             // some recipients checks !! ????
             memset(buf, 0, sizeof(buf)); sprintf(buf, "250 <%s@%s> ... Recipient OK\r\n", username_recp, domain_recv_recp);
             send(newsockfd, buf, strlen(buf), 0);
-                printf("\t%s\n", buf);
 
             memset(buf, 0, sizeof(buf));
             while (1) {
@@ -210,7 +211,6 @@ int main()
                     break;
                 }
             }
-                printf("\t%s\n", buf);  
             // check if the first four characters are DATA
             if (strncmp(buf, "DATA", 4) != 0) {
                 memset(buf, 0, sizeof(buf)); sprintf(buf, "500 Syntax error: command unrecognized\r\n");
@@ -220,7 +220,6 @@ int main()
             }
             memset(buf, 0, sizeof(buf)); sprintf(buf, "354 Enter mail, end with \".\" on a line by itself\r\n");
             send(newsockfd, buf, strlen(buf), 0);
-                printf("\t%s\n", buf);
             char mail[MAX_MAIL]; memset(mail, 0, sizeof(mail));
             while (1) {
                 char temp_buf[MAX_BUFF]; memset(temp_buf, 0, sizeof(temp_buf));
@@ -230,7 +229,6 @@ int main()
                     break;
                 }
             }
-                printf("\t%s\n", mail);
             
             // check if the to and from fields are valid, to and from fields are username@domain
             char path_to[MAX_PATH]; memset(path_to, 0, sizeof(path_to));

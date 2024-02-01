@@ -23,15 +23,19 @@
 int main(int argc, char*argv[]) {
     char server_ip[100];
     int smtp_port, pop3_port;
+
     if (argc != 4) {
         printf("Usage: ./mailclient <server_ip> <smtp_port> <pop3_port>\n");
         exit(0);
     }
+
     strcpy(server_ip, argv[1]);
     smtp_port = atoi(argv[2]);
     pop3_port = atoi(argv[3]);
+
     char username[MAX_USERNAME];
     char password[MAX_PASSWORD];
+
     printf("Enter the username: ");
     fgets(username, sizeof(username), stdin);
     if (username[strlen(username) - 1] == '\n') {
@@ -116,6 +120,15 @@ int main(int argc, char*argv[]) {
                     strcat(mail_body, mail_body_line);
                     strcat(mail_body, "\r\n");
                 }
+                //check that the subject is not empty
+                if(strlen(subject)==0 ){
+                    printf("Incorrect format, Subject should not be empty\n");
+                    exit(0);
+                }
+                if(strlen(subject)>50){
+                    printf("Incorrect format, Subject should not exceed 50 characters\n");
+                    exit(0);
+                }
                 if (flag == 0) {
                     break;
                 }
@@ -166,6 +179,7 @@ int main(int argc, char*argv[]) {
                         atIndex = i;
                     }
                 }
+
                 if (flag == 0) {
                     break;
                 }
@@ -205,12 +219,12 @@ int main(int argc, char*argv[]) {
                     j++;
                 }   recv_domain[j] = '\0';
 
-                printf("sender: %s\n", sender);
-                printf("send_domain: %s\n", send_domain);
-                printf("receiver: %s\n", receiver);
-                printf("recv_domain: %s\n", recv_domain);
-                printf("subject: %s\n", subject);
-                printf("mail_body: %s\n", mail_body);
+                // printf("sender: %s\n", sender);
+                // printf("send_domain: %s\n", send_domain);
+                // printf("receiver: %s\n", receiver);
+                // printf("recv_domain: %s\n", recv_domain);
+                // printf("subject: %s\n", subject);
+                // printf("mail_body: %s\n", mail_body);
 
                 
                 int	sockfd ;
@@ -235,7 +249,6 @@ int main(int argc, char*argv[]) {
                         break;
                     }
                 }
-                    printf("\t%s\n", buf);
                 if (buf[0] != '2' || buf[1] != '2' || buf[2] != '0') {
                     printf("Error in connection\n");
                     exit(0);
@@ -255,7 +268,6 @@ int main(int argc, char*argv[]) {
                 }   domain_serv_recv[j] = '\0';
                 memset(buf, 0, sizeof(buf)); sprintf(buf, "HELO <%s>\r\n", domain);
                 send(sockfd, buf, strlen(buf), 0);
-                    printf("\t%s\n", buf);
                 memset(buf, 0, sizeof(buf));
                 while (1) {
                     char temp_buf[MAX_BUFF]; memset(temp_buf, 0, sizeof(temp_buf));
@@ -265,7 +277,7 @@ int main(int argc, char*argv[]) {
                         break;
                     }
                 }
-                    printf("\t%s\n", buf);
+
                 if (buf[0] == '5' && buf[1] == '0' && (buf[2] == '0' || buf[2] == '1')) {
                     printf("Error in sending mail: %s", buf);
                     exit(0);
@@ -274,10 +286,11 @@ int main(int argc, char*argv[]) {
                     printf("Error in connection\n");
                     exit(0);
                 }
+
                 memset(buf, 0, sizeof(buf)); sprintf(buf, "MAIL FROM: <%s@%s>\r\n", sender, send_domain);
                 send(sockfd, buf, strlen(buf), 0);
-                    printf("\t%s\n", buf);
                 memset(buf, 0, sizeof(buf));
+
                 while (1) {
                     char temp_buf[MAX_BUFF]; memset(temp_buf, 0, sizeof(temp_buf));
                     n = recv(sockfd, temp_buf, MAX_BUFF, 0);
@@ -286,7 +299,7 @@ int main(int argc, char*argv[]) {
                         break;
                     }
                 }
-                    printf("\t%s\n", buf);
+
                 if (buf[0] == '5' && buf[1] == '0' && (buf[2] == '0' || buf[2] == '1')) {
                     printf("Error in sending mail: %s", buf);
                     exit(0);
@@ -295,11 +308,12 @@ int main(int argc, char*argv[]) {
                     printf("Error in connection\n");
                     exit(0);
                 }
+
                 // printf("Enter the receiver's username: ");
                 memset(buf, 0, sizeof(buf)); sprintf(buf, "RCPT TO: <%s@%s>\r\n", receiver, recv_domain);
                 send(sockfd, buf, strlen(buf), 0);
-                    printf("\t%s\n", buf);
                 memset(buf, 0, sizeof(buf));
+
                 while (1) {
                     char temp_buf[MAX_BUFF]; memset(temp_buf, 0, sizeof(temp_buf));
                     n = recv(sockfd, temp_buf, MAX_BUFF, 0);
@@ -308,7 +322,7 @@ int main(int argc, char*argv[]) {
                         break;
                     }
                 }
-                    printf("\t%s\n", buf);
+
                 if (buf[0] == '5' && buf[1] == '0' && (buf[2] == '0' || buf[2] == '1')) {
                     printf("Error in sending mail: %s", buf);
                     exit(0);
@@ -321,10 +335,11 @@ int main(int argc, char*argv[]) {
                     printf("Error in connection\n");
                     exit(0);
                 }
+
                 memset(buf, 0, sizeof(buf)); sprintf(buf, "DATA\r\n");
                 send(sockfd, buf, strlen(buf), 0);
-                    printf("\t%s\n", buf);
                 memset(buf, 0, sizeof(buf));
+
                 while (1) {
                     char temp_buf[MAX_BUFF]; memset(temp_buf, 0, sizeof(temp_buf));
                     n = recv(sockfd, temp_buf, MAX_BUFF, 0);
@@ -333,7 +348,7 @@ int main(int argc, char*argv[]) {
                         break;
                     }
                 }
-                    printf("\t%s\n", buf);
+
                 if (buf[0] == '5' && buf[1] == '0' && (buf[2] == '0' || buf[2] == '1')) {
                     printf("Error in sending mail: %s", buf);
                     exit(0);
@@ -361,10 +376,9 @@ int main(int argc, char*argv[]) {
                         start++;
                     }
                     send(sockfd, buf, strlen(buf), 0);
-                    if (buf[strlen(buf)-3] == '.' && buf[strlen(buf)-2] == '\r' && buf[strlen(buf)-1] == '\n') {
-                        printf("CLRF found\n");
-                    }
-                    printf("\t%s\n", buf);
+                    // if (buf[strlen(buf)-3] == '.' && buf[strlen(buf)-2] == '\r' && buf[strlen(buf)-1] == '\n') {
+                    //     printf("CLRF found\n");
+                    // }
                 }
                 memset(buf, 0, sizeof(buf));
                 while (1) {
@@ -375,7 +389,7 @@ int main(int argc, char*argv[]) {
                         break;
                     }
                 }
-                    printf("\t%s\n", buf);
+
                 if (buf[0] == '5' && buf[1] == '0' && (buf[2] == '0' || buf[2] == '1')) {
                     printf("Error in sending mail: %s", buf);
                     exit(0);
@@ -384,9 +398,9 @@ int main(int argc, char*argv[]) {
                     printf("Error in connection\n");
                     exit(0);
                 }
+
                 memset(buf, 0, sizeof(buf)); sprintf(buf, "QUIT\r\n");
                 send(sockfd, buf, strlen(buf), 0);
-                    printf("\t%s\n", buf);
                 memset(buf, 0, sizeof(buf));
                 while (1) {
                     char temp_buf[MAX_BUFF]; memset(temp_buf, 0, sizeof(temp_buf));
@@ -396,7 +410,7 @@ int main(int argc, char*argv[]) {
                         break;
                     }
                 }
-                    printf("\t%s\n", buf);
+
                 if (buf[0] == '5' && buf[1] == '0' && (buf[2] == '0' || buf[2] == '1')) {
                     printf("Error in sending mail: %s", buf);
                     exit(0);
@@ -404,7 +418,8 @@ int main(int argc, char*argv[]) {
                 if (buf[0] != '2' || buf[1] != '2' || buf[2] != '1') {
                     printf("Error in connection\n");
                     exit(0);
-                }                
+                }  
+                printf("Mail sent successfully\n");              
                 close(sockfd);
                 break;
             }

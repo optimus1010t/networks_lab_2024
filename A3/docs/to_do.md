@@ -20,3 +20,12 @@ popserver.c
 
 how do we get to know that the entire thing is recieved like what is the EOF? -- \r\n
 what should be the buffer/packet size over tcp -- 4000, added other constraints too
+
+
+final:
+    case insensitive
+    check if we can send mail to a single mail server with multiple mail clients
+    handle multiline output from the server
+    adding the RECIEVED line which indicates time and all
+    give prot number as a command line argument smtp
+
