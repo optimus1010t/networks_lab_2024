@@ -302,7 +302,7 @@ int main(int argc, char*argv[]) {
                 }
 
                 // printf("Enter the receiver's username: ");
-                memset(buf, 0, sizeof(buf)); sprintf(buf, "RCPT TO: %s@%s\r\n", receiver, recv_domain);
+                memset(buf, 0, sizeof(buf)); sprintf(buf, "RCPT TO: <%s@%s>\r\n", receiver, recv_domain);
                 send(sockfd, buf, strlen(buf), 0);
                 memset(buf, 0, sizeof(buf));
 
