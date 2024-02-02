@@ -129,37 +129,72 @@ int main(int argc, char*argv[])
             char username[MAX_USERNAME];
             // extract the username and domain from the MAIL FROM command
             i = 0;
-            while (buf[i] != '<') i++;
-            i++; int j = 0;
-            while (buf[i] != '@') {
-                // ignore the whitespace characters
-                if (buf[i] == ' ' || buf[i] == '\t') {
-                    i++;
-                    continue;
-                }
-                username[j] = buf[i];
-                i++;
-                j++;
-            }   username[j] = '\0';
+            while (buf[i] != '@' && i < strlen(buf)) i++;
             char domain_recv2[MAX_DOMAIN]; memset(domain_recv2, 0, sizeof(domain_recv2));
-            i++; j = 0;
-            while (buf[i] != '>') {
-                // ignore the whitespace characters
-                if (buf[i] == ' ' || buf[i] == '\t') {
+            if (i == strlen(buf)) {
+                memset(buf, 0, sizeof(buf)); sprintf(buf, "501 Syntax error in parameters or arguments\r\n");
+                send(newsockfd, buf, strlen(buf), 0);
+                close(newsockfd);
+                exit(0);
+            }
+            else {
+                int first_time_col = 0;
+                int last_time_arrow = strlen(buf) - 1;
+                int first_time_arrow = 0;
+                int i_backup = i;
+                i = 0;
+                while (buf[i] != ':' && i<(strlen(buf)-1)) i++;
+                first_time_col = i;
+                i = 0;
+                while (buf[i] != '<' && i<(strlen(buf)-1)) i++;
+                first_time_arrow = i;
+                i = strlen(buf) - 1;
+                while (buf[i] != '>' && i > 0) i--;
+                last_time_arrow = i;
+                i = i_backup;
+                i++; int j = 0;
+                while (buf[i] != '\r' && buf[i] != '\n' && buf[i] != ' ' && buf[i] != '\t' && (i < last_time_arrow || last_time_arrow == 0)) {
+                    domain_recv2[j] = buf[i];
                     i++;
-                    continue;
+                    j++;
+                }   domain_recv2[j] = '\0';
+                i = i_backup;
+                j = 0;
+                while (buf[i]!= ' ' && buf[i] != '\t' && i > first_time_col && (i > first_time_arrow || first_time_arrow == (strlen(buf)-1))) {
+                    i--;
                 }
-                domain_recv2[j] = buf[i];
                 i++;
-                j++;
-            }   domain_recv2[j] = '\0';
-            // check if the domain is same as the one in HELO command
-            // if (strcmp(domain_recv, domain_recv2) != 0) {
-            //     memset(buf, 0, sizeof(buf)); sprintf(buf, "501 Syntax error in parameters or arguments\r\n");
-            //     send(newsockfd, buf, strlen(buf), 0);
-            //     close(newsockfd);
-            //     exit(0);
-            // }
+                while (i<i_backup) {
+                    username[j] = buf[i];
+                    i++;
+                    j++;
+                }   username[j] = '\0';
+            }
+            // i = 0;
+            // while (buf[i] != '<') i++;
+            // i++; int j = 0;
+            // while (buf[i] != '@') {
+            //     // ignore the whitespace characters
+            //     if (buf[i] == ' ' || buf[i] == '\t') {
+            //         i++;
+            //         continue;
+            //     }
+            //     username[j] = buf[i];
+            //     i++;
+            //     j++;
+            // }   username[j] = '\0';
+            // i++; j = 0;
+            // while (buf[i] != '>') {
+            //     // ignore the whitespace characters
+            //     if (buf[i] == ' ' || buf[i] == '\t') {
+            //         i++;
+            //         continue;
+            //     }
+            //     domain_recv2[j] = buf[i];
+            //     i++;
+            //     j++;
+            // }   domain_recv2[j] = '\0';
+
             memset(buf, 0, sizeof(buf)); sprintf(buf, "250 <%s@%s> ... Sender OK\r\n", username, domain_recv2);
             send(newsockfd, buf, strlen(buf), 0);
             memset(buf, 0, sizeof(buf));
@@ -191,20 +226,28 @@ int main(int argc, char*argv[])
             }
             else {
                 int first_time_col = 0;
+                int last_time_arrow = strlen(buf) - 1;
+                int first_time_arrow = 0;
                 int i_backup = i;
                 i = 0;
-                while (buf[i] != ':') i++;
+                while (buf[i] != ':' && i<(strlen(buf)-1)) i++;
                 first_time_col = i;
+                i = 0;
+                while (buf[i] != '<' && i<(strlen(buf)-1)) i++;
+                first_time_arrow = i;
+                i = strlen(buf) - 1;
+                while (buf[i] != '>' && i > 0) i--;
+                last_time_arrow = i;
                 i = i_backup;
                 i++; int j = 0;
-                while (buf[i] != '\r' && buf[i] != '\n' && buf[i] != ' ' && buf[i] != '\t' && buf[i] != '>') {
+                while (buf[i] != '\r' && buf[i] != '\n' && buf[i] != ' ' && buf[i] != '\t' && (i < last_time_arrow || last_time_arrow == 0)) {
                     domain_recv_recp[j] = buf[i];
                     i++;
                     j++;
                 }   domain_recv_recp[j] = '\0';
                 i = i_backup;
                 j = 0;
-                while (buf[i]!= ' ' && buf[i] != '\t' && i > first_time_col && buf[i] != '<') {
+                while (buf[i]!= ' ' && buf[i] != '\t' && i > first_time_col && (i > first_time_arrow || first_time_arrow == (strlen(buf)-1))) {
                     i--;
                 }
                 i++;
@@ -277,7 +320,7 @@ int main(int argc, char*argv[])
                 exit(0);
             }
             char mail_to_write[strlen(mail) + 100]; memset(mail_to_write, 0, sizeof(mail_to_write));
-            j=0; int c = 0;
+            int j=0; int c = 0;
             for (i = 0; i < strlen(mail); i++)
             {
                 if (c < 3 && mail[i] == '\r' && mail[i + 1] == '\n')
