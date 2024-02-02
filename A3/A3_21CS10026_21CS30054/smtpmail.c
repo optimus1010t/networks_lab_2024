@@ -190,15 +190,11 @@ int main(int argc, char*argv[])
                 exit(0);
             }
             else {
+                int first_time_col = 0;
                 int i_backup = i;
-                int index_TO = 0;
-                for (i = 0; i < strlen(buf); i++)
-                {
-                    if (buf[i]==':') {
-                        index_TO = i;
-                        break;
-                    }
-                }
+                i = 0;
+                while (buf[i] != ':') i++;
+                first_time_col = i;
                 i = i_backup;
                 i++; int j = 0;
                 while (buf[i] != '\r' && buf[i] != '\n' && buf[i] != ' ' && buf[i] != '\t' && buf[i] != '>') {
@@ -208,7 +204,7 @@ int main(int argc, char*argv[])
                 }   domain_recv_recp[j] = '\0';
                 i = i_backup;
                 j = 0;
-                while (buf[i]!= ' ' && buf[i] != '\t' && (i >= (index_TO) && buf[i] != '<')) {
+                while (buf[i]!= ' ' && buf[i] != '\t' && i > first_time_col && buf[i] != '<') {
                     i--;
                 }
                 i++;
