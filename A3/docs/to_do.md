@@ -1,4 +1,7 @@
 to-do:
+    sending QUIT to server then OK from consumer then QUIT
+
+
     look at multiline output from the server
     case-insensitive
     add conditions to check if there is < and > such that not get stuck in a forever loop

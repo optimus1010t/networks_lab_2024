@@ -181,7 +181,7 @@ int main(int argc, char*argv[])
             // extract the username and domain from the RCPT TO command
             char username_recp[MAX_USERNAME]; memset(username_recp, 0, sizeof(username_recp));
             char domain_recv_recp[MAX_DOMAIN]; memset(domain_recv_recp, 0, sizeof(domain_recv_recp));
-            i = 7;
+            i = 0;
             while (buf[i] != '@' && i < strlen(buf)) i++;
             if (i == strlen(buf)) {
                 memset(buf, 0, sizeof(buf)); sprintf(buf, "501 Syntax error in parameters or arguments\r\n");
@@ -191,15 +191,24 @@ int main(int argc, char*argv[])
             }
             else {
                 int i_backup = i;
+                int index_TO = 0;
+                for (i = 0; i < strlen(buf); i++)
+                {
+                    if (buf[i]==':') {
+                        index_TO = i;
+                        break;
+                    }
+                }
+                i = i_backup;
                 i++; int j = 0;
-                while (buf[i] != '\r' && buf[i] != '\n' && buf[i] != ' ' && buf[i] != '\t') {
+                while (buf[i] != '\r' && buf[i] != '\n' && buf[i] != ' ' && buf[i] != '\t' && buf[i] != '>') {
                     domain_recv_recp[j] = buf[i];
                     i++;
                     j++;
                 }   domain_recv_recp[j] = '\0';
                 i = i_backup;
                 j = 0;
-                while (buf[i]!= ' ' && buf[i] != '\t') {
+                while (buf[i]!= ' ' && buf[i] != '\t' && (i >= (index_TO) && buf[i] != '<')) {
                     i--;
                 }
                 i++;
@@ -259,7 +268,7 @@ int main(int argc, char*argv[])
             strcat(path_to, "./");
             strcat(path_to, username_recp);
             strcat(path_to, "/");
-            strcat(path_to, "mymailbox.txt");
+            strcat(path_to, "mymailbox");
             // char path_from[MAX_PATH]; memset(path_from, 0, sizeof(path_from));
             // strcat(path_from, "./");
             // strcat(path_from, domain_recv);
