@@ -9,6 +9,7 @@
 #include <fcntl.h>
 #include <arpa/inet.h>
 
+// ???? remove all printfs and scanfs
 #define MAX_BUFF 100
 #define FILE_MAX_BUFF 100
 
@@ -72,21 +73,19 @@ int main()
         send(sockfd, buf, strlen(buf), 0);
         // now reading the file and sending it
         memset(buf, 0, sizeof(buf));
-        int last_size; char last_ch = '\0'; 
+        int last_size;
         while (read(file_d, buf, sizeof(buf)) > 0){
             last_size = strlen(buf);
-            if (last_size < 100) {
-                if (buf[last_size-1] != '\n')
-                    buf[last_size] = '$';
-            }
-            last_ch = buf[last_size-1];
+            // if (last_size < 100) {
+            //     buf[last_size] = '$';
+            // }
             send(sockfd, buf, strlen(buf), 0);
             memset(buf, 0, sizeof(buf));
         }
-        if (last_ch != '\n' && last_ch != '$') { 
-            buf[0] = '$';
-            send(sockfd, buf, strlen(buf), 0);
-        }
+        // if (last_size == 100) { 
+        //     buf[0] = '$';
+        //     send(sockfd, buf, strlen(buf), 0);
+        // }
         /*
             The files given to check have a newline charcter at the last 
             so we are sending a newline character to indicate the end of the file

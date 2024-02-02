@@ -64,14 +64,14 @@ int main()
 			while (1) {
 				n = recv(newsockfd, buf, MAX_BUFF, 0);
 				ssize_t buf_len = 0;
-				if (buf[0] != '$') 
-				buf_len = write(fd, buf, strlen(buf));
-				if (buf[strlen(buf)-1] == '\n' || buf[strlen(buf)-1] == '$'){
-					buf[strlen(buf) - 1] = '\0';
+				// if (buf[0] != '$') 
+				// buf_len = write(fd, buf, strlen(buf));
+				if (buf[strlen(buf)-1] == '\n'){
+					// buf[strlen(buf) - 1] = '\0';
 					buf_len = write(fd, buf, strlen(buf));
 					break;
 				}
-				// buf_len = write(fd, buf, strlen(buf));
+				buf_len = write(fd, buf, strlen(buf));
 				if (buf_len == -1) {
 					printf("Error in writing to file\n");
 					continue;
