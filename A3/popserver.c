@@ -212,7 +212,20 @@ int main(int argc, char*argv[])
                 exit(0);
             }
             memset(buf, 0, sizeof(buf)); sprintf(buf, "+OK maildrop ready\r\n");
-            send(newsockfd, buf, strlen(buf), 0);          
+            send(newsockfd, buf, strlen(buf), 0);     
+
+            memset(buf, 0, sizeof(buf));
+			while (1) {
+                char temp_buf[MAX_BUFF]; memset(temp_buf, 0, sizeof(temp_buf));
+                n = recv(newsockfd, temp_buf, MAX_BUFF, 0);
+                strcat(buf, temp_buf);
+                if (buf[strlen(buf)-2] == '\r' && buf[strlen(buf)-1] == '\n') {
+                    break;
+                }
+            }
+            while (strncmp(buf, "USER\0", 4) != 0){
+                
+            }
             
             close(newsockfd);
 			exit(0);

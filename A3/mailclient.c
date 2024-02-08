@@ -17,6 +17,7 @@
 #define MAX_MAIL 6000
 #define MAX_LINE 100
 #define MAX_MAILID 650
+#define MAX_COMMAND 10
 
 // In accordance wirh RFC 5321 and RFC 1939
 
@@ -35,6 +36,7 @@ int main(int argc, char*argv[]) {
 
     char username[MAX_USERNAME];
     char password[MAX_PASSWORD];
+    char command[MAX_COMMAND];
 
     printf("Enter the username: ");
     fgets(username, sizeof(username), stdin);
@@ -125,7 +127,12 @@ int main(int argc, char*argv[]) {
                     printf("Error: %s", buf);
                     exit(0);
                 }
-                
+                printf("\t> ");
+                fgets(command, sizeof(command), stdin);
+                if (command[strlen(command) - 1] == '\n') {
+                    command[strlen(command) - 1] = '\0';
+                }
+                while ()
 
 
                 close(sockfd);
@@ -491,6 +498,5 @@ int main(int argc, char*argv[]) {
                 exit(0);
             }
         }
-
     } 
 }
