@@ -1,12 +1,10 @@
 to-do:
-    sending QUIT to server then OK from consumer then QUIT
+    random QUIT in between and handle wherever somehting is getting sent
 
 
     look at multiline output from the server
     case-insensitive
-    add conditions to check if there is < and > such that not get stuck in a forever loop
-    what all to check for recipients mail to start the mail writing process
-    checks for sender and recipient between former and later
+
 
 queries:
     HELO, MAIL, RCPT, DATA, QUIT protocol info

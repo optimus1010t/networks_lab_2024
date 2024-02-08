@@ -57,6 +57,78 @@ int main(int argc, char*argv[]) {
         switch(choice) 
         {
             case 1: {
+                int n;
+                char buf[MAX_BUFF]; memset(buf, 0, sizeof(buf));
+                int i, j;
+
+                int	sockfd ;
+                struct sockaddr_in	serv_addr;
+                if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+                    perror("Unable to create socket\n");
+                    exit(0);
+                }
+                serv_addr.sin_family	= AF_INET;
+                inet_aton(server_ip, &serv_addr.sin_addr);
+                serv_addr.sin_port	= htons(pop3_port);
+                if ((connect(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr))) < 0) {
+                    perror("Unable to connect to server");
+                    exit(0);
+                }
+                memset(buf, 0, sizeof(buf));
+                while (1) {
+                    char temp_buf[MAX_BUFF]; memset(temp_buf, 0, sizeof(temp_buf));
+                    n = recv(sockfd, temp_buf, MAX_BUFF, 0);
+                    strcat(buf, temp_buf);
+                    if (buf[strlen(buf)-2] == '\r' && buf[strlen(buf)-1] == '\n') {
+                        break;
+                    }
+                }
+
+                if (buf[0] != '+' || buf[1] != 'O' || buf[2] != 'K') {
+                    printf("Error in connection %s", buf);
+                    exit(0);
+                }
+                
+                memset(buf, 0, sizeof(buf)); sprintf(buf, "USER %s\r\n", username);
+                send(sockfd, buf, strlen(buf), 0);
+
+                memset(buf, 0, sizeof(buf));
+                while (1) {
+                    char temp_buf[MAX_BUFF]; memset(temp_buf, 0, sizeof(temp_buf));
+                    n = recv(sockfd, temp_buf, MAX_BUFF, 0);
+                    strcat(buf, temp_buf);
+                    if (buf[strlen(buf)-2] == '\r' && buf[strlen(buf)-1] == '\n') {
+                        break;
+                    }
+                }
+                
+                if (buf[0] != '+' || buf[1] != 'O' || buf[2] != 'K') {
+                    // extract everything other than -ERR from buf
+                    printf("Error: %s", buf);
+                    exit(0);
+                }
+
+                memset(buf, 0, sizeof(buf)); sprintf(buf, "PASS %s\r\n", password);
+                send(sockfd, buf, strlen(buf), 0);
+
+                memset(buf, 0, sizeof(buf));
+                while (1) {
+                    char temp_buf[MAX_BUFF]; memset(temp_buf, 0, sizeof(temp_buf));
+                    n = recv(sockfd, temp_buf, MAX_BUFF, 0);
+                    strcat(buf, temp_buf);
+                    if (buf[strlen(buf)-2] == '\r' && buf[strlen(buf)-1] == '\n') {
+                        break;
+                    }
+                }
+                if (buf[0] != '+' || buf[1] != 'O' || buf[2] != 'K') {
+                    // extract everything other than -ERR from buf
+                    printf("Error: %s", buf);
+                    exit(0);
+                }
+                
+
+
+                close(sockfd);
                 break;
             }
             case 2: {

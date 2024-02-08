@@ -332,7 +332,7 @@ int main(int argc, char*argv[])
                         i++;
                         time_t t = time(NULL);
                         struct tm tm = *localtime(&t);
-                        sprintf(recv_time, "Recieved: %d-%02d-%02d %02d:%02d:%02d\r\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
+                        sprintf(recv_time, "Received: %d-%02d-%02d %02d:%02d:%02d\r\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
                         strcat(mail_to_write, recv_time);
                         j=strlen(mail_to_write);
                         c++;
