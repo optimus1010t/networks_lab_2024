@@ -127,16 +127,6 @@ int main(int argc, char*argv[]) {
                     printf("Error: %s", buf);
                     exit(0);
                 }
-                printf("\t> ");
-                fgets(command, sizeof(command), stdin);
-                if (command[strlen(command) - 1] == '\n') {
-                    command[strlen(command) - 1] = '\0';
-                }
-                while (strncmp(command, "QUIT", 4) != 0){
-                    
-                }
-
-
                 close(sockfd);
                 break;
             }

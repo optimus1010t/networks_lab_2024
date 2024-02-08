@@ -17,6 +17,8 @@
 #define MAX_PATH 1000
 #define MAX_MAIL 6000
 #define MAX_MAILID 650
+#define MAX_LINE_LENGTH 200
+#define MAX_NO_MAIL 100
 
 // In accordance wirh RFC 5321 and RFC 1939
 int main(int argc, char*argv[])
@@ -211,6 +213,20 @@ int main(int argc, char*argv[])
                 close(newsockfd);
                 exit(0);
             }
+
+            FILE *mail_file;
+            char line[MAX_LINE_LENGTH];
+
+            // Open the file
+            strcat(path, "myboxmail");
+            mail_file = fopen(path, "r");
+            if (mail_file == NULL) {
+                memset(buf, 0, sizeof(buf)); sprintf(buf, "-ERR Opening mailbox\r\n");
+                send(newsockfd, buf, strlen(buf), 0);
+                close(newsockfd);
+                exit(0);
+            }
+            fclose(mail_file);
             memset(buf, 0, sizeof(buf)); sprintf(buf, "+OK maildrop ready\r\n");
             send(newsockfd, buf, strlen(buf), 0);     
 
@@ -223,9 +239,349 @@ int main(int argc, char*argv[])
                     break;
                 }
             }
-            while (strncmp(buf, "QUIT", 4) != 0){
-                
+
+            // void display_mail_details(int serial_number, const char* sender, const char* received, const char* subject) {
+            //     printf("%d\t", serial_number);
+            //     printf("<%s>\t", sender);
+            //     printf("<%s>\t", received);
+            //     printf("<%s>\t", subject);
+            //     printf("\n");
+            // }
+            char sender[MAX_LINE_LENGTH]; memset(sender, 0, sizeof(sender));
+            char receiver[MAX_LINE_LENGTH]; memset(receiver, 0, sizeof(receiver));
+            char received[MAX_LINE_LENGTH]; memset(received, 0, sizeof(received));
+            char subject[MAX_LINE_LENGTH];  memset(subject, 0, sizeof(subject));
+            char temp_buf[MAX_BUFF]; memset(temp_buf, 0, sizeof(temp_buf));
+            // Read the file line by line
+            int serial_number = 0;
+            int loop_in=0;
+            int check_inbody = 0;
+            mail_file = fopen(path, "r");
+            while (fgets(line,sizeof(line),mail_file)!=NULL) {
+                line[strcspn(line, "\n")] = 0;
+                if (strcmp(line, ".") == 0) {
+                    if(strlen(sender)>0 && strlen(received)>0 && strlen(subject)>0 && strlen(receiver)>0){
+                        serial_number++;                       
+                    }
+                    check_inbody = 0;
+                    memset(sender, 0, sizeof(sender));
+                    memset(receiver, 0, sizeof(receiver));
+                    memset(received, 0, sizeof(received));
+                    memset(subject, 0, sizeof(subject));
+                    memset(temp_buf, 0, sizeof(temp_buf));
+                } else {
+                    if (strncmp(line, "To", 2) == 0 && check_inbody < 4) {
+                        strcpy(receiver, line);
+                        check_inbody++;                                
+                    } else if (strncmp(line, "From", 4) == 0 && check_inbody < 4) {
+                        strcpy(sender, line);
+                        check_inbody++;                                
+                    }
+                    else if (strncmp(line, "Received", 8) == 0 && check_inbody < 4) {
+                        strcpy(received, line);
+                        check_inbody++;
+                    }
+                    else if (strncmp(line, "Subject", 7) == 0 && check_inbody < 4) {
+                        strcpy(subject, line);
+                        check_inbody++;
+                    }
+                    else {
+                        strcat(temp_buf, line);
+                    }
+                }
+                memset(line, 0, sizeof(line));
+                loop_in++;
             }
+            fclose(mail_file);
+            int deleted_msgs[serial_number+1];
+            for (int i = 0; i <= serial_number; i++) {
+                deleted_msgs[i] = 0;
+            }
+            int total_mails = serial_number;
+            int body_length[total_mails+1]; for (int i = 0; i <= serial_number; i++) body_length[i] = 0;
+            int from_length[total_mails+1]; for (int i = 0; i <= serial_number; i++) from_length[i] = 0;
+            int to_length[total_mails+1]; for (int i = 0; i <= serial_number; i++) to_length[i] = 0;
+            int subject_length[total_mails+1]; for (int i = 0; i <= serial_number; i++) subject_length[i] = 0;
+            int received_length[total_mails+1]; for (int i = 0; i <= serial_number; i++) received_length[i] = 0;
+            long int total_length[total_mails+1]; for (int i = 0; i <= serial_number; i++) total_length[i] = 0;            
+
+            memset(sender, 0, sizeof(sender));
+            memset(receiver, 0, sizeof(receiver));
+            memset(received, 0, sizeof(received));
+            memset(subject, 0, sizeof(subject));
+            memset(temp_buf, 0, sizeof(temp_buf));
+            int check_inbody = 0;
+            int totalcharacterCount = 0;
+            long int indv_count = 0;
+            serial_number = 0;
+            mail_file = fopen(path, "r");
+            while (fgets(line,sizeof(line),mail_file)!=NULL) {
+                line[strcspn(line, "\n")] = 0;
+                if (strcmp(line, ".") == 0) {
+                    if(strlen(sender)>0 && strlen(received)>0 && strlen(subject)>0 && strlen(receiver)>0){
+                        serial_number++;
+                        total_length[serial_number] = indv_count;
+                        totalcharacterCount += indv_count;                        
+                    }
+                    check_inbody = 0;
+                    memset(sender, 0, sizeof(sender));
+                    memset(receiver, 0, sizeof(receiver));
+                    memset(received, 0, sizeof(received));
+                    memset(subject, 0, sizeof(subject));
+                    memset(temp_buf, 0, sizeof(temp_buf));
+                } else {
+                    if (strncmp(line, "To", 2) == 0 && check_inbody < 4) {
+                        strcpy(receiver, line);
+                        to_length[serial_number+1] = strlen(line);
+                        indv_count += strlen(line)+1;
+                        check_inbody++;                                
+                    } else if (strncmp(line, "From", 4) == 0 && check_inbody < 4) {
+                        strcpy(sender, line);
+                        from_length[serial_number+1] = strlen(line);
+                        indv_count += strlen(line)+1;
+                        check_inbody++;                                
+                    }
+                    else if (strncmp(line, "Received", 8) == 0 && check_inbody < 4) {
+                        strcpy(received, line);
+                        received_length[serial_number+1] = strlen(line);
+                        indv_count += strlen(line)+1;
+                        check_inbody++;
+                    }
+                    else if (strncmp(line, "Subject", 7) == 0 && check_inbody < 4) {
+                        strcpy(subject, line);
+                        subject_length[serial_number+1] = strlen(line);
+                        indv_count += strlen(line)+1;
+                        check_inbody++;
+                    }
+                    else {
+                        body_length[serial_number+1] += strlen(line);
+                        indv_count += strlen(line)+1;
+                        strcat(temp_buf, line);
+                    }
+                }
+                memset(line, 0, sizeof(line));
+                loop_in++;
+            }
+
+
+            while (strncmp(buf, "QUIT", 4) != 0){
+                if (strncmp(buf, "STAT", 4) == 0) {
+                    int count = 0;
+                    long int total_char_deleted = 0;
+                    for (int i = 1; i <= total_mails; i++) {
+                        if (deleted_msgs[i] != 0) {
+                            total_char_deleted += total_length[i];
+                            count++;
+                        }
+                    }
+                    memset(buf, 0, sizeof(buf)); sprintf(buf, "+OK %d %d\r\n", total_mails - count, totalcharacterCount - total_char_deleted);
+                    send(newsockfd, buf, strlen(buf), 0);
+                }
+                else if (strncmp(buf, "LIST", 4) == 0) {
+                    i = 4;
+                    while (i < strlen(buf) && (buf[i] == ' ' || buf[i] == '\t')) i++;
+                    if (buf[i] == '\r' && buf[i+1] == '\n'){
+                        
+                        int count = 0;
+                        long int total_char_deleted = 0;
+                        for (int i = 1; i <= total_mails; i++) {
+                            if (deleted_msgs[i] != 0) {
+                                total_char_deleted += total_length[i];
+                                count++;
+                            }
+                        }
+                        memset(buf, 0, sizeof(buf)); sprintf(buf, "+OK %d messages (%d octets)\r\n", total_mails - count, totalcharacterCount - total_char_deleted);
+                        send(newsockfd, buf, strlen(buf), 0);
+                        int non_deleted_msgs = 0;
+                        for (int i = 1; i <= total_mails; i++) {
+                            if (deleted_msgs[i] == 0) {
+                                non_deleted_msgs++;
+                                memset(buf, 0, sizeof(buf)); sprintf(buf, "%d %d\r\n", non_deleted_msgs, total_length[i]);
+                                send(newsockfd, buf, strlen(buf), 0);
+                            }
+                        }
+                    }
+                    else {
+                        int msg_number = 0; j = 0 ;
+                        char msg_number_str[MAX_NO_MAIL]; memset(msg_number_str, 0, sizeof(msg_number_str));
+                        while (i >= strlen(buf) && buf[i] != '\r' && buf[i] != '\n' && buf[i] != ' ' && buf[i] != '\t') {
+                            msg_number_str[j++] = buf[i];
+                            i++;
+                        }   msg_number_str[j] = '\0';
+                        msg_number = atoi(msg_number_str);
+                        int non_deleted_msgs = 0;
+                        for (int i = 1; i <= total_mails; i++) {
+                            if (deleted_msgs[i] == 0) {
+                                non_deleted_msgs++;
+                                if (non_deleted_msgs == msg_number) {
+                                    memset(buf, 0, sizeof(buf)); sprintf(buf, "+OK %d %d\r\n", msg_number, total_length[i]);
+                                    send(newsockfd, buf, strlen(buf), 0);
+                                    break;
+                                }
+                            }
+                        }
+                        if (msg_number < 1 || msg_number > non_deleted_msgs) {
+                            memset(buf, 0, sizeof(buf)); sprintf(buf, "-ERR no such message, only %d messages in maildrop starting from 1 (if there is one)\r\n", non_deleted_msgs);
+                        }
+                    }
+                }
+                else if (strncmp(buf, "RETR", 4) == 0) {
+                    i = 4;
+                    while (i < strlen(buf) && (buf[i] == ' ' || buf[i] == '\t')) i++;
+                    if (i >= strlen(buf) && buf[i] == '\r' && buf[i+1] == '\n') {
+                        memset(buf, 0, sizeof(buf)); sprintf(buf, "-ERR Syntax error: command unrecognized\r\n");
+                        send(newsockfd, buf, strlen(buf), 0);
+                        exit(0);
+                    }
+                    else {
+                        int msg_number = 0; j = 0 ;
+                        char msg_number_str[MAX_NO_MAIL]; memset(msg_number_str, 0, sizeof(msg_number_str));
+                        while (buf[i] != '\r' && buf[i] != '\n' && buf[i] != ' ' && buf[i] != '\t') {
+                            msg_number_str[j++] = buf[i];
+                            i++;
+                        }   msg_number_str[j] = '\0';
+                        msg_number = atoi(msg_number_str);
+                        int non_deleted_msgs = 0;
+                        for (int i = 1; i <= total_mails; i++) {
+                            if (deleted_msgs[i] == 0) {
+                                non_deleted_msgs++;
+                                if (non_deleted_msgs == msg_number) {
+                                    memset(buf, 0, sizeof(buf)); sprintf(buf, "+OK %d octets\r\n", total_length[i]);
+                                    send(newsockfd, buf, strlen(buf), 0);
+                                    break;
+                                }
+                            }
+                        }
+                        if (msg_number < 1 || msg_number > non_deleted_msgs) {
+                            memset(buf, 0, sizeof(buf)); sprintf(buf, "-ERR no such message, only %d messages in maildrop starting from 1 (if there is one)\r\n", non_deleted_msgs);
+                            send(newsockfd, buf, strlen(buf), 0);
+                            exit(0);
+                        }
+                        memset(sender, 0, sizeof(sender));
+                        memset(receiver, 0, sizeof(receiver));
+                        memset(received, 0, sizeof(received));
+                        memset(subject, 0, sizeof(subject));
+                        memset(temp_buf, 0, sizeof(temp_buf));
+                        serial_number = 0;
+                        check_inbody = 0;
+                        non_deleted_msgs = 0;
+                        mail_file = fopen(path, "r");
+                        while (fgets(line,sizeof(line),mail_file)!=NULL) {
+                            line[strcspn(line, "\n")] = 0;
+                            if (strcmp(line, ".") == 0) {
+                                if(strlen(sender)>0 && strlen(received)>0 && strlen(subject)>0 && strlen(receiver)>0){
+                                    serial_number++;
+                                    strcat (temp_buf, ".\r\n");
+                                    if (deleted_msgs[serial_number] == 0) {
+                                        non_deleted_msgs++;
+                                        if (non_deleted_msgs == msg_number) {
+                                            break;
+                                        }                                       
+                                    }
+                                }
+                                check_inbody = 0;
+                                memset(sender, 0, sizeof(sender));
+                                memset(receiver, 0, sizeof(receiver));
+                                memset(received, 0, sizeof(received));
+                                memset(subject, 0, sizeof(subject));
+                                memset(temp_buf, 0, sizeof(temp_buf));
+                            } else {
+                                if (strncmp(line, "To", 2) == 0 && check_inbody < 4) {
+                                    strcpy(receiver, line);
+                                    strcat(receiver, "\r\n");
+                                    check_inbody++;                                
+                                } else if (strncmp(line, "From", 4) == 0 && check_inbody < 4) {
+                                    strcpy(sender, line);
+                                    strcat(sender, "\r\n");
+                                    check_inbody++;                                
+                                }
+                                else if (strncmp(line, "Received", 8) == 0 && check_inbody < 4) {
+                                    strcpy(received, line);
+                                    strcat(received, "\r\n");
+                                    check_inbody++;
+                                }
+                                else if (strncmp(line, "Subject", 7) == 0 && check_inbody < 4) {
+                                    strcpy(subject, line);
+                                    strcat(subject, "\r\n");
+                                    check_inbody++;
+                                }
+                                else {
+                                    strcat(temp_buf, line);
+                                    strcat(temp_buf, "\r\n");
+                                }
+                            }
+                            memset(line, 0, sizeof(line));
+                            loop_in++;
+                        }
+                        fclose(mail_file);
+                        memset(buf, 0, sizeof(buf)); sprintf(buf, "%s", sender);
+                        send(newsockfd, buf, strlen(buf), 0);
+                        memset(buf, 0, sizeof(buf)); sprintf(buf, "%s", receiver);
+                        send(newsockfd, buf, strlen(buf), 0);
+                        memset(buf, 0, sizeof(buf)); sprintf(buf, "%s", subject);
+                        send(newsockfd, buf, strlen(buf), 0);
+                        memset(buf, 0, sizeof(buf)); sprintf(buf, "%s", received);
+                        send(newsockfd, buf, strlen(buf), 0);
+                        memset(buf, 0, sizeof(buf)); sprintf(buf, "%s", temp_buf);
+                        send(newsockfd, buf, strlen(buf), 0);
+                    }
+                }
+                else if (strncmp(buf, "DELE", 4) == 0) {
+                    i = 4;
+                    while (i < strlen(buf) && (buf[i] == ' ' || buf[i] == '\t')) i++;
+                    if (i >= strlen(buf) && buf[i] == '\r' && buf[i+1] == '\n') {
+                        memset(buf, 0, sizeof(buf)); sprintf(buf, "-ERR Syntax error: command unrecognized\r\n");
+                        send(newsockfd, buf, strlen(buf), 0);
+                        exit(0);
+                    }
+                    else {
+                        int msg_number = 0; j = 0 ;
+                        char msg_number_str[MAX_NO_MAIL]; memset(msg_number_str, 0, sizeof(msg_number_str));
+                        while (buf[i] != '\r' && buf[i] != '\n' && buf[i] != ' ' && buf[i] != '\t') {
+                            msg_number_str[j++] = buf[i];
+                            i++;
+                        }   msg_number_str[j] = '\0';
+                        msg_number = atoi(msg_number_str);
+                        int non_deleted_msgs = 0;
+                        for (int i = 1; i <= total_mails; i++) {
+                            if (deleted_msgs[i] == 0) {
+                                non_deleted_msgs++;
+                                if (non_deleted_msgs == msg_number) {
+                                    deleted_msgs[i] = 1;
+                                    memset(buf, 0, sizeof(buf)); sprintf(buf, "+OK message %d deleted\r\n", msg_number);
+                                    send(newsockfd, buf, strlen(buf), 0);
+                                    break;
+                                }
+                            }
+                        }
+                        if (msg_number < 1 || msg_number > non_deleted_msgs) {
+                            memset(buf, 0, sizeof(buf)); sprintf(buf, "-ERR no such message, only %d messages in maildrop starting from 1 (if there is one)\r\n", non_deleted_msgs);
+                            send(newsockfd, buf, strlen(buf), 0);
+                            exit(0);
+                        }
+                    }
+                }
+                else if (strncmp(buf, "RSET", 4) == 0) {
+                    i = 1;
+                    for (int i = 0; i <= total_mails; i++) {
+                        deleted_msgs[i] = 0;
+                    }
+                }
+                else if (strncmp(buf, "NOOP", 4) == 0) {
+                    memset(buf, 0, sizeof(buf)); sprintf(buf, "+OK\r\n");
+                    send(newsockfd, buf, strlen(buf), 0);
+                }
+                memset(buf, 0, sizeof(buf));
+                while (1) {
+                    char temp_buf[MAX_BUFF]; memset(temp_buf, 0, sizeof(temp_buf));
+                    n = recv(newsockfd, temp_buf, MAX_BUFF, 0);
+                    strcat(buf, temp_buf);
+                    if (buf[strlen(buf)-2] == '\r' && buf[strlen(buf)-1] == '\n') {
+                        break;
+                    }
+                }
+            }
+            memset(buf, 0, sizeof(buf)); sprintf(buf, "+OK POP3 server signing off\r\n");
             
             close(newsockfd);
 			exit(0);
