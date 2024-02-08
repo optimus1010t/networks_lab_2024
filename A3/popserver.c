@@ -214,7 +214,7 @@ int main(int argc, char*argv[])
             memset(line, 0, sizeof(line));
 
             // Open the file
-            strcat(path, "myboxmail");
+            strcat(path, "/mymailbox");
             mail_file = fopen(path, "r");
             if (mail_file == NULL) {
                 memset(buf, 0, sizeof(buf)); sprintf(buf, "-ERR Opening mailbox\r\n");
@@ -300,7 +300,7 @@ int main(int argc, char*argv[])
             memset(subject, 0, sizeof(subject));
             memset(temp_buf, 0, sizeof(temp_buf));
             check_inbody = 0;
-            int totalcharacterCount = 0;
+            long int totalcharacterCount = 0;
             long int indv_count = 0;
             serial_number = 0;
             mail_file = fopen(path, "r");
@@ -570,6 +570,69 @@ int main(int argc, char*argv[])
                     }
                 }
             }
+            char path_temp[MAX_PATH]; memset(path_temp, 0, sizeof(path_temp));
+            strcat(path_temp, "./");
+            strcat(path_temp, username);
+            strcat(path_temp, "temp.txt");
+            FILE *tempFile = fopen(path_temp, "w");
+            memset(sender, 0, sizeof(sender));
+            memset(receiver, 0, sizeof(receiver));
+            memset(received, 0, sizeof(received));
+            memset(subject, 0, sizeof(subject));
+            memset(temp_buf, 0, sizeof(temp_buf));
+            check_inbody = 0;
+            totalcharacterCount = 0;
+            indv_count = 0;
+            serial_number = 0;
+            mail_file = fopen(path, "r");
+            while (fgets(line,sizeof(line),mail_file)!=NULL) {
+                line[strcspn(line, "\n")] = 0;
+                if (strcmp(line, ".") == 0) {
+                    if(strlen(sender)>0 && strlen(received)>0 && strlen(subject)>0 && strlen(receiver)>0){
+                        serial_number++;
+                        total_length[serial_number] = indv_count;
+                        totalcharacterCount += indv_count;                        
+                    }
+                    check_inbody = 0;
+                    memset(sender, 0, sizeof(sender));
+                    memset(receiver, 0, sizeof(receiver));
+                    memset(received, 0, sizeof(received));
+                    memset(subject, 0, sizeof(subject));
+                    memset(temp_buf, 0, sizeof(temp_buf));
+                } else {
+                    if (strncmp(line, "To", 2) == 0 && check_inbody < 4) {
+                        strcpy(receiver, line);
+                        to_length[serial_number+1] = strlen(line);
+                        indv_count += strlen(line)+1;
+                        check_inbody++;                                
+                    } else if (strncmp(line, "From", 4) == 0 && check_inbody < 4) {
+                        strcpy(sender, line);
+                        from_length[serial_number+1] = strlen(line);
+                        indv_count += strlen(line)+1;
+                        check_inbody++;                                
+                    }
+                    else if (strncmp(line, "Received", 8) == 0 && check_inbody < 4) {
+                        strcpy(received, line);
+                        received_length[serial_number+1] = strlen(line);
+                        indv_count += strlen(line)+1;
+                        check_inbody++;
+                    }
+                    else if (strncmp(line, "Subject", 7) == 0 && check_inbody < 4) {
+                        strcpy(subject, line);
+                        subject_length[serial_number+1] = strlen(line);
+                        indv_count += strlen(line)+1;
+                        check_inbody++;
+                    }
+                    else {
+                        body_length[serial_number+1] += strlen(line);
+                        indv_count += strlen(line)+1;
+                        strcat(temp_buf, line);
+                    }
+                }
+                memset(line, 0, sizeof(line));
+                loop_in++;
+            }
+
             memset(buf, 0, sizeof(buf)); sprintf(buf, "+OK POP3 server signing off\r\n");
             
             close(newsockfd);
