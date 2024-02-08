@@ -117,8 +117,8 @@ int main(int argc, char*argv[])
                 close(newsockfd);
                 exit(0);
             }
-            printf("subdirectory exists\n");
-            fflush(stdout);
+            // printf("subdirectory exists\n");
+            // fflush(stdout);
 
             FILE* user_file = fopen("./user.txt", "r");
             if (user_file == NULL) {
@@ -635,7 +635,8 @@ int main(int argc, char*argv[])
             fclose(tempFile);
             remove(path);
             rename(path_temp, path);
-            memset(buf, 0, sizeof(buf)); sprintf(buf, "+OK POP3 server signing off\r\n");            
+            memset(buf, 0, sizeof(buf)); sprintf(buf, "+OK POP3 server signing off\r\n"); 
+            send(newsockfd, buf, strlen(buf), 0);           
             close(newsockfd);
 			exit(0);
 		}

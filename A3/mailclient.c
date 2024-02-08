@@ -18,6 +18,8 @@
 #define MAX_LINE 100
 #define MAX_MAILID 650
 #define MAX_COMMAND 10
+#define MAX_NO_MAIL 100
+#define MAX_LINE_LENGTH 200
 
 // In accordance wirh RFC 5321 and RFC 1939
 
@@ -107,7 +109,7 @@ int main(int argc, char*argv[]) {
                 if (buf[0] != '+' || buf[1] != 'O' || buf[2] != 'K') {
                     // extract everything other than -ERR from buf
                     printf("Error: %s", buf);
-                    exit(0);
+                    close(sockfd); exit(0);
                 }
 
                 memset(buf, 0, sizeof(buf)); sprintf(buf, "PASS %s\r\n", password);
@@ -125,8 +127,167 @@ int main(int argc, char*argv[]) {
                 if (buf[0] != '+' || buf[1] != 'O' || buf[2] != 'K') {
                     // extract everything other than -ERR from buf
                     printf("Error: %s", buf);
-                    exit(0);
+                    close(sockfd); exit(0);
                 }
+
+                memset(buf, 0, sizeof(buf)); sprintf(buf, "STAT\r\n");
+                send(sockfd, buf, strlen(buf), 0);
+
+                memset(buf, 0, sizeof(buf));
+                while (1) {
+                    char temp_buf[MAX_BUFF]; memset(temp_buf, 0, sizeof(temp_buf));
+                    n = recv(sockfd, temp_buf, MAX_BUFF, 0);
+                    strcat(buf, temp_buf);
+                    if (buf[strlen(buf)-2] == '\r' && buf[strlen(buf)-1] == '\n') {
+                        break;
+                    }
+                }
+                printf("%s\n", buf);
+                fflush(stdout);
+                if (buf[0] != '+' || buf[1] != 'O' || buf[2] != 'K') {
+                    printf("Error : %s", buf);
+                    close(sockfd); exit(0);
+                }
+                i = 3; j = 0;
+                int mail_count = 0;
+                char mail_count_str[MAX_NO_MAIL]; memset(mail_count_str, 0, sizeof(mail_count_str));
+                while (buf[i] == ' ' || buf[i] == '\t') i++;
+                while (buf[i] != ' ' && buf[i] != '\t') {
+                    mail_count_str[j] = buf[i];
+                    j++;
+                    i++;
+                }   mail_count_str[j] = '\0';
+                mail_count = atoi(mail_count_str);
+
+                int mail_number = 0;
+                do {
+                    for ( i = 1; i <= mail_count; i++){
+                        memset(buf, 0, sizeof(buf)); sprintf(buf, "RETR %d\r\n", i);
+                        send(sockfd, buf, strlen(buf), 0);
+                        memset(buf, 0, sizeof(buf));
+                        char mail[MAX_MAIL]; memset(mail, 0, sizeof(mail));
+                        while (1) {
+                            char temp_buf[MAX_BUFF]; memset(temp_buf, 0, sizeof(temp_buf));
+                            n = recv(sockfd, temp_buf, MAX_BUFF, 0);
+                            strcat(mail, temp_buf);
+                            if (mail[strlen(mail)-5] == '\r' && mail[strlen(mail)-4] == '\n' && mail[strlen(mail)-3] == '.' && mail[strlen(mail)-2] == '\r' && mail[strlen(mail)-1] == '\n') {
+                                break;
+                            }
+                        }
+                        char temp_sender[MAX_LINE_LENGTH]; memset(temp_sender, 0, sizeof(temp_sender));
+                        char temp_received[MAX_LINE_LENGTH]; memset(temp_received, 0, sizeof(temp_received));
+                        char temp_subject[MAX_LINE_LENGTH];  memset(temp_subject, 0, sizeof(temp_subject));
+                        char temp_receiver[MAX_LINE_LENGTH]; memset(temp_receiver, 0, sizeof(temp_receiver));
+                        char *line;
+                        int serial_number = 0;
+                        int check_body = 0;
+                        line = strtok(mail, "\r\n");
+                        line = strtok(NULL, "\r\n");
+
+                        while(line != NULL){
+                            if(strstr(line, "From") && check_body < 4){
+                                strcpy(temp_sender, line);
+                                temp_sender[strlen(temp_sender)] = '\0';
+                                check_body++;
+                            }else if(strstr(line, "Received") && check_body < 4){
+                                strcpy(temp_received, line);
+                                temp_received[strlen(temp_received)] = '\0';
+                                check_body++;
+                            }else if(strstr(line, "Subject") && check_body < 4){
+                                strcpy(temp_subject, line);
+                                temp_subject[strlen(temp_subject)] = '\0';
+                                check_body++;
+                            }else if(strstr(line, "To") && check_body < 4){
+                                strcpy(temp_receiver, line);
+                                temp_receiver[strlen(temp_receiver)] = '\0';
+                                check_body++;
+                            }else if(strcmp(line, ".") == 0){
+                                serial_number++;
+                            }
+                            line = strtok(NULL, "\r\n");
+                        }
+                        char sender[MAX_LINE_LENGTH]; memset(sender, 0, sizeof(sender));
+                        char received[MAX_LINE_LENGTH]; memset(received, 0, sizeof(received));
+                        char subject[MAX_LINE_LENGTH];  memset(subject, 0, sizeof(subject));
+                        char receiver[MAX_LINE_LENGTH]; memset(receiver, 0, sizeof(receiver));
+                        int i = 0;
+                        int j = 0;
+                        while (temp_sender[i] != ':') i++; i++;
+                        while (temp_sender[i] == ' ' || temp_sender[i] == '\t') i++;
+                        while (temp_sender[i] != ' ' && temp_sender[i] != '\t' && temp_sender[i] != '\0') sender[j++] = temp_sender[i++];
+                        i = 0; j = 0;
+                        while (temp_received[i] != ':') i++; i++;
+                        while (temp_received[i] == ' ' || temp_received[i] == '\t') i++;
+                        while (i < strlen(temp_received)) received[j++] = temp_received[i++];
+                        i = 0; j = 0;
+                        while (temp_subject[i] != ':') i++; i++;
+                        while (temp_subject[i] == ' ' || temp_subject[i] == '\t') i++;
+                        while (i < strlen(temp_subject)) subject[j++] = temp_subject[i++];
+                        i = 0; j = 0;
+                        while (temp_receiver[i] != ':') i++; i++;
+                        while (temp_receiver[i] == ' ' || temp_receiver[i] == '\t') i++;
+                        while (temp_receiver[i] != ' ' && temp_receiver[i] != '\t' && temp_receiver[i] != '\0') receiver[j++] = temp_receiver[i++];
+                        printf("%d\t\t%s\t\t%s\t\t%s\n", serial_number, sender, received, subject);
+                    }
+                    printf("Enter the mail number to see: ");
+                    scanf("%d", &mail_number);
+                    char ch; while ( (ch = getchar()) != '\n' && ch != EOF) { /* discard characters */ } ch = '\0';
+                    if (mail_number == -1) {
+                        break;
+                    }
+                    if (mail_number > mail_count) {
+                        printf("Mail number out of range, give again\n");
+                        continue;
+                    }
+                    memset(buf, 0, sizeof(buf)); sprintf(buf, "RETR %d\r\n", mail_number);
+                    send(sockfd, buf, strlen(buf), 0);
+                    memset(buf, 0, sizeof(buf));
+                    char mail[MAX_MAIL]; memset(mail, 0, sizeof(mail));
+                    while (1) {
+                        char temp_buf[MAX_BUFF]; memset(temp_buf, 0, sizeof(temp_buf));
+                        n = recv(sockfd, temp_buf, MAX_BUFF, 0);
+                        strcat(mail, temp_buf);
+                        if (mail[strlen(mail)-5] == '\r' && mail[strlen(mail)-4] == '\n' && mail[strlen(mail)-3] == '.' && mail[strlen(mail)-2] == '\r' && mail[strlen(mail)-1] == '\n') {
+                            break;
+                        }
+                    }
+                    printf("%s\n", mail);
+                    ch = getchar();
+                    if (ch == 'd'){
+                        memset(buf, 0, sizeof(buf)); sprintf(buf, "DELE %d\r\n", mail_number);
+                        send(sockfd, buf, strlen(buf), 0);
+                        memset(buf, 0, sizeof(buf));
+                        while (1) {
+                            char temp_buf[MAX_BUFF]; memset(temp_buf, 0, sizeof(temp_buf));
+                            n = recv(sockfd, temp_buf, MAX_BUFF, 0);
+                            strcat(buf, temp_buf);
+                            if (buf[strlen(buf)-2] == '\r' && buf[strlen(buf)-1] == '\n') {
+                                break;
+                            }
+                        }
+                        if (buf[0] != '+' || buf[1] != 'O' || buf[2] != 'K') {
+                            printf("Error: %s", buf);
+                            close(sockfd); exit(0);
+                        }
+                    }
+                    while ( (ch = getchar()) != '\n' && ch != EOF) { /* discard characters */ } ch = '\0';
+                } while (mail_number != -1);
+                memset(buf, 0, sizeof(buf)); sprintf(buf, "QUIT\r\n");
+                send(sockfd, buf, strlen(buf), 0);
+                memset(buf, 0, sizeof(buf));
+                while (1) {
+                    char temp_buf[MAX_BUFF]; memset(temp_buf, 0, sizeof(temp_buf));
+                    n = recv(sockfd, temp_buf, MAX_BUFF, 0);
+                    strcat(buf, temp_buf);
+                    if (buf[strlen(buf)-2] == '\r' && buf[strlen(buf)-1] == '\n') {
+                        break;
+                    }
+                }
+                if (buf[0] != '+' || buf[1] != 'O' || buf[2] != 'K') {
+                    printf("Error: %s", buf);
+                    close(sockfd); exit(0);
+                }
+                printf("%s\n", buf);
                 close(sockfd);
                 break;
             }
