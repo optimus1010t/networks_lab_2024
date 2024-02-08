@@ -123,17 +123,13 @@ int main(int argc, char*argv[])
             FILE* user_file = fopen("./user.txt", "r");
             if (user_file == NULL) {
                 printf("Error opening file.\n");
-                return NULL;
+                exit(0);
             }
             int flag = 0;
             char temp_username[MAX_USERNAME]; memset(temp_username, 0, sizeof(temp_username));
             char temp_password[MAX_PASSWORD]; memset(temp_password, 0, sizeof(temp_password));
-            if (user_file == NULL) {
-                printf("Error opening file.\n");
-                return NULL;
-            }
 
-            char line[MAX_USERNAME + MAX_PASSWORD + 2];
+            char line[MAX_LINE_LENGTH];
             while (fgets(line, sizeof(line), user_file) != NULL) {
                 // printf("line: %s\n", line);
                 // fflush(stdout);
@@ -215,7 +211,7 @@ int main(int argc, char*argv[])
             }
 
             FILE *mail_file;
-            char line[MAX_LINE_LENGTH];
+            memset(line, 0, sizeof(line));
 
             // Open the file
             strcat(path, "myboxmail");
@@ -240,13 +236,6 @@ int main(int argc, char*argv[])
                 }
             }
 
-            // void display_mail_details(int serial_number, const char* sender, const char* received, const char* subject) {
-            //     printf("%d\t", serial_number);
-            //     printf("<%s>\t", sender);
-            //     printf("<%s>\t", received);
-            //     printf("<%s>\t", subject);
-            //     printf("\n");
-            // }
             char sender[MAX_LINE_LENGTH]; memset(sender, 0, sizeof(sender));
             char receiver[MAX_LINE_LENGTH]; memset(receiver, 0, sizeof(receiver));
             char received[MAX_LINE_LENGTH]; memset(received, 0, sizeof(received));
@@ -310,7 +299,7 @@ int main(int argc, char*argv[])
             memset(received, 0, sizeof(received));
             memset(subject, 0, sizeof(subject));
             memset(temp_buf, 0, sizeof(temp_buf));
-            int check_inbody = 0;
+            check_inbody = 0;
             int totalcharacterCount = 0;
             long int indv_count = 0;
             serial_number = 0;
