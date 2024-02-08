@@ -223,7 +223,7 @@ int main(int argc, char*argv[])
                     break;
                 }
             }
-            while (strncmp(buf, "USER\0", 4) != 0){
+            while (strncmp(buf, "QUIT", 4) != 0){
                 
             }
             

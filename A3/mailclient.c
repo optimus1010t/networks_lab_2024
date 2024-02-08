@@ -132,7 +132,9 @@ int main(int argc, char*argv[]) {
                 if (command[strlen(command) - 1] == '\n') {
                     command[strlen(command) - 1] = '\0';
                 }
-                while ()
+                while (strncmp(command, "QUIT", 4) != 0){
+                    
+                }
 
 
                 close(sockfd);
