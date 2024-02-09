@@ -194,7 +194,7 @@ int main(int argc, char * argv[]) {
                         while(fgets(szbuf, MAXBUFFLEN, mailbox)){
                             if(del[num] == 0)
                                 sztosend += strlen(szbuf)+1;
-                            if(strcmp(szbuf, ".\n") == 0){
+                            if(strcmp(szbuf, ".\r\n") == 0){
                                 num++;
                             }
                         }

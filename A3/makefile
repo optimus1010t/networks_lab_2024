@@ -1,4 +1,4 @@
-port=20000
+port=20001
 mailclient:
 	rm -f mailclient
 	gcc mailclient.c -o mailclient
