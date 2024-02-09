@@ -1,8 +1,9 @@
+port=20000
 mailclient:
 	rm -f mailclient
 	gcc mailclient.c -o mailclient
 	clear
-	./mailclient 127.0.0.1 20001 20002
+	./mailclient 127.0.0.1 20001 $(port)
 
 smtpmail:
 	rm -f smtpmail
@@ -14,9 +15,10 @@ popserver:
 	rm -f popserver
 	gcc popserver.c -o popserver 
 	clear
-	./popserver 20002
+	./popserver $(port)
 
 clean:
 	rm -f mailclient
 	rm -f smtpmail
+	rm -f a.out
 	rm -f popserver

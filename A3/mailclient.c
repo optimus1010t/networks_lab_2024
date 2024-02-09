@@ -142,8 +142,8 @@ int main(int argc, char*argv[]) {
                         break;
                     }
                 }
-                printf("%s\n", buf);
-                fflush(stdout);
+                // printf("%s\n", buf);
+                // fflush(stdout);
                 if (buf[0] != '+' || buf[1] != 'O' || buf[2] != 'K') {
                     printf("Error : %s", buf);
                     close(sockfd); exit(0);
@@ -160,9 +160,10 @@ int main(int argc, char*argv[]) {
                 mail_count = atoi(mail_count_str);
 
                 int mail_number = 0;
+                int deleted = 0;
                 do {
-                    for ( i = 1; i <= mail_count; i++){
-                        memset(buf, 0, sizeof(buf)); sprintf(buf, "RETR %d\r\n", i);
+                    for ( int i_loop = 1; i_loop <= mail_count - deleted; i_loop++){
+                        memset(buf, 0, sizeof(buf)); sprintf(buf, "RETR %d\r\n", i_loop);
                         send(sockfd, buf, strlen(buf), 0);
                         memset(buf, 0, sizeof(buf));
                         char mail[MAX_MAIL]; memset(mail, 0, sizeof(mail));
@@ -179,7 +180,6 @@ int main(int argc, char*argv[]) {
                         char temp_subject[MAX_LINE_LENGTH];  memset(temp_subject, 0, sizeof(temp_subject));
                         char temp_receiver[MAX_LINE_LENGTH]; memset(temp_receiver, 0, sizeof(temp_receiver));
                         char *line;
-                        int serial_number = 0;
                         int check_body = 0;
                         line = strtok(mail, "\r\n");
                         line = strtok(NULL, "\r\n");
@@ -202,7 +202,6 @@ int main(int argc, char*argv[]) {
                                 temp_receiver[strlen(temp_receiver)] = '\0';
                                 check_body++;
                             }else if(strcmp(line, ".") == 0){
-                                serial_number++;
                             }
                             line = strtok(NULL, "\r\n");
                         }
@@ -227,7 +226,7 @@ int main(int argc, char*argv[]) {
                         while (temp_receiver[i] != ':') i++; i++;
                         while (temp_receiver[i] == ' ' || temp_receiver[i] == '\t') i++;
                         while (temp_receiver[i] != ' ' && temp_receiver[i] != '\t' && temp_receiver[i] != '\0') receiver[j++] = temp_receiver[i++];
-                        printf("%d\t\t%s\t\t%s\t\t%s\n", serial_number, sender, received, subject);
+                        printf("%d\t\t%s\t\t%s\t\t%s\n", i_loop, sender, received, subject);
                     }
                     printf("Enter the mail number to see: ");
                     scanf("%d", &mail_number);
@@ -235,7 +234,7 @@ int main(int argc, char*argv[]) {
                     if (mail_number == -1) {
                         break;
                     }
-                    if (mail_number > mail_count) {
+                    if (mail_number > mail_count || mail_number < 1) {
                         printf("Mail number out of range, give again\n");
                         continue;
                     }
@@ -269,9 +268,42 @@ int main(int argc, char*argv[]) {
                             printf("Error: %s", buf);
                             close(sockfd); exit(0);
                         }
+                        deleted++;
                     }
                     while ( (ch = getchar()) != '\n' && ch != EOF) { /* discard characters */ } ch = '\0';
                 } while (mail_number != -1);
+
+                memset(buf, 0, sizeof(buf)); sprintf(buf, "LIST\r\n");
+                send(sockfd, buf, strlen(buf), 0);
+                memset(buf, 0, sizeof(buf));
+                while (1) {
+                    char temp_buf[MAX_BUFF]; memset(temp_buf, 0, sizeof(temp_buf));
+                    n = recv(sockfd, temp_buf, MAX_BUFF, 0);
+
+                    // printf("%s\n", temp_buf);
+                    // fflush(stdout);
+
+                    strcat(buf, temp_buf);
+                    if (buf[strlen(buf)-5]=='\r' && buf[strlen(buf)-4]=='\n' && buf[strlen(buf)-3]=='.' && buf[strlen(buf)-2]=='\r' && buf[strlen(buf)-1]=='\n') {
+                        break;
+                    }
+                }
+                // printf("%s\n", buf);
+                // fflush(stdout);
+
+                memset(buf, 0, sizeof(buf)); sprintf(buf, "LIST 2\r\n");
+                send(sockfd, buf, strlen(buf), 0);
+                memset(buf, 0, sizeof(buf));
+                while (1) {
+                    char temp_buf[MAX_BUFF]; memset(temp_buf, 0, sizeof(temp_buf));
+                    n = recv(sockfd, temp_buf, MAX_BUFF, 0);
+                    strcat(buf, temp_buf);
+                    if (buf[strlen(buf)-2] == '\r' && buf[strlen(buf)-1] == '\n') {
+                        break;
+                    }
+                }
+
+
                 memset(buf, 0, sizeof(buf)); sprintf(buf, "QUIT\r\n");
                 send(sockfd, buf, strlen(buf), 0);
                 memset(buf, 0, sizeof(buf));
