@@ -234,13 +234,13 @@ int main(int argc, char*argv[]) {
                         while (temp_receiver[i] != ' ' && temp_receiver[i] != '\t' && temp_receiver[i] != '\0') receiver[j++] = temp_receiver[i++];
                         printf("%d\t\t%s\t\t%s\t\t%s\n", i_loop, sender, received, subject);
                     }
-                    printf("Enter the mail number to see (-1 to exit): ");
+                    printf("Enter the mail number to see (-1 to exit this option): ");
                     scanf("%d", &mail_number);
                     char ch; while ( (ch = getchar()) != '\n' && ch != EOF) { /* discard characters */ } ch = '\0';
                     if (mail_number == -1) {
                         break;
                     }
-                    if (mail_number > mail_count || mail_number < 1) {
+                    if (mail_number > mail_count - deleted || mail_number < 1) {
                         printf("Mail number out of range, give again\n");
                         continue;
                     }
