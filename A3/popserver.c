@@ -262,7 +262,7 @@ int main(int argc, char*argv[])
             mail_file = fopen(path, "r");
             while (fgets(line,sizeof(line),mail_file)!=NULL) {
                 // line[strcspn(line, "\n")] = 0;
-                if (strcmp(line, ".\r\n") == 0 || (strcmp(line, ".\n")==0 && strlen(line)==2)) {
+                if (strcmp(line, ".\r\n") == 0 /* || (strcmp(line, ".\n")==0 && strlen(line)==2) */) {
                     if(strlen(sender)>0 && strlen(received)>0 && strlen(subject)>0 && strlen(receiver)>0){
                         serial_number++;                       
                     }
@@ -325,7 +325,7 @@ int main(int argc, char*argv[])
             mail_file = fopen(path, "r");
             while (fgets(line,sizeof(line),mail_file)!=NULL) {
                 // line[strcspn(line, "\n")] = 0;
-                if (strcmp(line, ".\r\n") == 0  || (strcmp(line, ".\n")==0 && strlen(line)==2)) {
+                if (strcmp(line, ".\r\n") == 0  /*|| (strcmp(line, ".\n")==0 && strlen(line)==2 )*/) {
                     if(strlen(sender)>0 && strlen(received)>0 && strlen(subject)>0 && strlen(receiver)>0){
                         serial_number++;
                         total_length[serial_number] = indv_count+3;
