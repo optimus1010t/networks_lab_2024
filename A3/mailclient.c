@@ -251,7 +251,7 @@ int main(int argc, char*argv[]) {
                         }
                     }
                     printf("%s\n", mail);
-                    printf("Enter a character (d to delete and any other to print the mails again) :");
+                    printf("Enter a character (d to delete and any other to print the mails again): ");
                     ch = getchar();
                     if (ch == 'd'){
                         memset(buf, 0, sizeof(buf)); sprintf(buf, "DELE %d\r\n", mail_number);
