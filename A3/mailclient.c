@@ -228,7 +228,7 @@ int main(int argc, char*argv[]) {
                         while (temp_receiver[i] != ' ' && temp_receiver[i] != '\t' && temp_receiver[i] != '\0') receiver[j++] = temp_receiver[i++];
                         printf("%d\t\t%s\t\t%s\t\t%s\n", i_loop, sender, received, subject);
                     }
-                    printf("Enter the mail number to see: ");
+                    printf("Enter the mail number to see (-1 to exit): ");
                     scanf("%d", &mail_number);
                     char ch; while ( (ch = getchar()) != '\n' && ch != EOF) { /* discard characters */ } ch = '\0';
                     if (mail_number == -1) {
@@ -251,6 +251,7 @@ int main(int argc, char*argv[]) {
                         }
                     }
                     printf("%s\n", mail);
+                    printf("Enter a character (d to delete and any other to print the mails again) :");
                     ch = getchar();
                     if (ch == 'd'){
                         memset(buf, 0, sizeof(buf)); sprintf(buf, "DELE %d\r\n", mail_number);
@@ -273,36 +274,8 @@ int main(int argc, char*argv[]) {
                     while ( (ch = getchar()) != '\n' && ch != EOF) { /* discard characters */ } ch = '\0';
                 } while (mail_number != -1);
 
-                memset(buf, 0, sizeof(buf)); sprintf(buf, "LIST\r\n");
-                send(sockfd, buf, strlen(buf), 0);
-                memset(buf, 0, sizeof(buf));
-                while (1) {
-                    char temp_buf[MAX_BUFF]; memset(temp_buf, 0, sizeof(temp_buf));
-                    n = recv(sockfd, temp_buf, MAX_BUFF, 0);
-
-                    // printf("%s\n", temp_buf);
-                    // fflush(stdout);
-
-                    strcat(buf, temp_buf);
-                    if (buf[strlen(buf)-5]=='\r' && buf[strlen(buf)-4]=='\n' && buf[strlen(buf)-3]=='.' && buf[strlen(buf)-2]=='\r' && buf[strlen(buf)-1]=='\n') {
-                        break;
-                    }
-                }
                 // printf("%s\n", buf);
                 // fflush(stdout);
-
-                memset(buf, 0, sizeof(buf)); sprintf(buf, "LIST 2\r\n");
-                send(sockfd, buf, strlen(buf), 0);
-                memset(buf, 0, sizeof(buf));
-                while (1) {
-                    char temp_buf[MAX_BUFF]; memset(temp_buf, 0, sizeof(temp_buf));
-                    n = recv(sockfd, temp_buf, MAX_BUFF, 0);
-                    strcat(buf, temp_buf);
-                    if (buf[strlen(buf)-2] == '\r' && buf[strlen(buf)-1] == '\n') {
-                        break;
-                    }
-                }
-
 
                 memset(buf, 0, sizeof(buf)); sprintf(buf, "QUIT\r\n");
                 send(sockfd, buf, strlen(buf), 0);
