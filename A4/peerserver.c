@@ -106,12 +106,14 @@ int main(int argc, char*argv[])
     for (i = 0; i < NO_OF_CLIENTS+1; i++) {
         cli_indices[i] = -1;
     }
+    struct timeval tv;
+    tv.tv_sec = 0;
+    tv.tv_usec = 0;
 
-    fd_set fds_og, fds;
-    FD_ZERO (&fds);
     // printf("Server started\n");
     // fflush(stdout);
     while(1) {
+        fd_set fds;
         FD_ZERO (&fds);
         FD_SET(0, &fds);
         FD_SET(sockfd, &fds);
@@ -126,7 +128,19 @@ int main(int argc, char*argv[])
         }
         if (nfds < sockfd) nfds = sockfd;
         nfds++;
-        select(nfds, &fds, 0, 0, 0);
+        // tv.tv_sec = 15;
+        // tv.tv_usec = 0;
+        int time_rem = select(nfds, &fds, 0, 0, 0);
+        // if (time_rem == 0) {
+        //     for (i = 0; i < NO_OF_CLIENTS; i++) {
+        //         if (client_isthere[i] != -1){
+        //             close(newsockfd[i]);
+        //             client_isthere[i] = -1;
+        //         }
+        //     }
+        //     printf("Timeout\n");
+        //     fflush(stdout);
+        // }
         for (i = 0; i < NO_OF_CLIENTS; i++) {
             if (client_isthere[i] != -1 && FD_ISSET(newsockfd[i], &fds)) {
                 memset(buf, 0, MAX_BUFF); char temp_buff[MAX_BUFF]; memset(temp_buff, 0, MAX_BUFF);
@@ -139,12 +153,13 @@ int main(int argc, char*argv[])
                     if (temp_buff[strlen(temp_buff)-1] == '\n') break;
                     memset(temp_buff, 0, MAX_BUFF);
                 }
-                // if (num == 0) {
-                //     FD_CLR(newsockfd[i], &fds);
-                //     newsockfd[i] = -1;
-                //     close(newsockfd[i]);
-                //     continue;            
-                // }
+                if (num == 0) {
+                    FD_CLR(newsockfd[i], &fds);
+                    newsockfd[i] = -1;
+                    client_isthere[i] = -1;
+                    close(newsockfd[i]);
+                    continue;            
+                }
                 char name[MAX_FRIEND_NAME]; memset(name, 0, MAX_FRIEND_NAME);
                 int k = 0;
                 int count = 0;
