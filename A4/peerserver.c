@@ -19,7 +19,7 @@
 #define MAX_PATH 1000
 #define MAX_MAIL 6000
 #define MAX_MAILID 650
-#define OFFSET 3
+#define OFFSET 0
 #define NO_OF_CLIENTS 2
 #define TABLE_SIZE 3
 #define MAX_FRIEND_NAME 100
