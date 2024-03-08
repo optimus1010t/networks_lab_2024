@@ -9,7 +9,6 @@
 #include <fcntl.h>
 #include <arpa/inet.h>
 
-// ???? remove all printfs and scanfs
 #define MAX_BUFF 100
 #define FILE_MAX_BUFF 100
 
@@ -38,7 +37,7 @@ int main()
         }
         int file_d = open(filename, O_RDONLY);
         int k;
-        // check if the file ois empty
+        // check if the file is empty
         if (lseek(file_d, 0, SEEK_END) == 0) {
             printf("File is empty\n");
             continue;
