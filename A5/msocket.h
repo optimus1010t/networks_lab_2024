@@ -35,7 +35,7 @@
 
 struct wnd {
     int size;
-    int seq_no[10];
+    int seq_no[RWND > SWND ? RWND : SWND];
 };
 
 struct m_socket_handler {
@@ -52,14 +52,16 @@ struct m_socket_handler {
     char dest_ip_addr[MAXIP];
     unsigned short int dest_port;
 
-    int send_status[SWND];  // -1: can be used, 0: sent, 1: acked
-    int recv_status[RWND];
-
     int send_seq_no;
     int recv_seq_no;
 
-    int swnd_markers[2];  // starting and ending+1 index of swnd
-    int rwnd_markers[2];  // starting and ending+1 index of rwnd
+
+    int send_status[SWND];  // 0: can be used, 1: havent sent or acked
+    int recv_status[RWND];  // 0: delivered, 1: yet to be delivered
+
+
+    int swnd_markers[2];  // starting and ending index of swnd
+    int rwnd_markers[2];  // starting and ending index of rwnd
 };
 
 int m_socket(int domain, int type, int protocol);

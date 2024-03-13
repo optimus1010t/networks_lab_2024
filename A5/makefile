@@ -14,5 +14,5 @@ user2: user2.c libmsocket.a
 	gcc -o user2 user2.c -L. -lmsocket
 
 clean:
-	rm -f *.o *.a initmsocket user1 user2
+	rm -f *.o *.a initmsocket user1 user2 a.out
 

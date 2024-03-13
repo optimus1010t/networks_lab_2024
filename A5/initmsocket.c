@@ -14,17 +14,15 @@ int main() {
         memset(SM[i].dest_ip_addr, 0, MAXIP);
         memset(SM[i].send_buf, 0, 5*MAXBLOCK);
         memset(SM[i].recv_buf, 0, 10*MAXBLOCK);
-        SM[i].send_seq_no = 0;
-        SM[i].recv_seq_no = 0;
-        for (int j=0; j<2; j++){
-            SM[i].swnd_markers[j] = 0;
-            SM[i].rwnd_markers[j] = 0;
-        }
-        for (int j=0; j<SWND; j++){
-            SM[i].send_status[j] = -1;
-        }
-        for (int j=0; j<RWND; j++){
-            SM[i].recv_status[j] = -1;
+        SM[i].send_seq_no = 1;
+        SM[i].recv_seq_no = 1;
+        SM[i].swnd_markers[0] = 0; SM[i].swnd_markers[1] = SWND-1;
+        SM[i].rwnd_markers[0] = 0; SM[i].rwnd_markers[1] = RWND-1;
+        for (int j=0; j<(RWND > SWND ? RWND : SWND); j++){
+            SM[i].rwnd.seq_no[j] = -1;
+            SM[i].swnd.seq_no[j] = -1;
+            if (j <= SWND )SM[i].send_status[j] = 0;
+            if (j <= RWND )SM[i].recv_status[j] = 0;
         }
     }
     pthread_t Rid, Sid;
