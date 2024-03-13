@@ -20,6 +20,7 @@
 #include <sys/ipc.h>
 #include <sys/shm.h>
 #include <pthread.h>
+#include <sys/sem.h>
 
 #define MAXBLOCK 1024
 #define RWND 10
@@ -41,12 +42,24 @@ struct m_socket_handler {
     short int is_alloted;
     pid_t process_id;
     int socket_id;
-    char ip_addr[MAXIP];
-    unsigned short int port;
+    char src_ip_addr[MAXIP];
+    unsigned short int src_port;
     char send_buf[SWND][MAXBLOCK];
     char recv_buf[RWND][MAXBLOCK];
     struct wnd rwnd;
     struct wnd swnd;
+
+    char dest_ip_addr[MAXIP];
+    unsigned short int dest_port;
+
+    int send_status[SWND];  // -1: can be used, 0: sent, 1: acked
+    int recv_status[RWND];
+
+    int send_seq_no;
+    int recv_seq_no;
+
+    int swnd_markers[2];  // starting and ending+1 index of swnd
+    int rwnd_markers[2];  // starting and ending+1 index of rwnd
 };
 
 int m_socket(int domain, int type, int protocol);

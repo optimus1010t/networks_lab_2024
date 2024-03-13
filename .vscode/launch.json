@@ -8,8 +8,8 @@
       "args": [],
       "stopAtEntry": false,
       "externalConsole": false,
-      "cwd": ".",
-      "program": "build/Debug/outDebug",
+      "cwd": "/home/optimus1010t/college/classes/sem 6/networks_lab/networks_lab_2024/A5",
+      "program": "/home/optimus1010t/college/classes/sem 6/networks_lab/networks_lab_2024/A5/build/Debug/outDebug",
       "MIMode": "gdb",
       "miDebuggerPath": "gdb",
       "setupCommands": [
