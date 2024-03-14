@@ -8,6 +8,20 @@ int main() {
         perror("shmget");
         exit(1);
     }
+    
+    int sem_join = semget(ftok("msocket.h", 7), MAXSOCKETS, 0777 | IPC_CREAT);
+    if (sem_join == -1) {
+        perror("semget");
+        return;
+    }
+
+    for (int i = 0; i < MAXSOCKETS; i++) {
+        if (semctl(sem_join, i, SETVAL, 1) == -1) {
+            perror("semctl");
+            return;
+        }
+    }
+
     for(int i=0; i<MAXSOCKETS; i++){
         SM[i].is_alloted = 0;
         memset(SM[i].src_ip_addr, 0, MAXIP);

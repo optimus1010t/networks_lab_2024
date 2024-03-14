@@ -78,7 +78,6 @@ int m_bind(int sockfd, char source_ip[MAXIP], unsigned short int source_port, ch
 int m_sendto(int sockfd, const void *buf, size_t len, int flags);
 int m_recvfrom(int sockfd, void *buf, size_t len, int flags);
 int m_close(int fd);
-void sendACK(int sockfd, int lastInorderSeqNum, int windowSize);
 
 void* R();
 void* S();
