@@ -24,6 +24,8 @@ int main() {
             if (j <= SWND )SM[i].send_status[j] = 0;
             if (j <= RWND )SM[i].recv_status[j] = 0;
         }
+        SM[i].rwnd.size = 7;
+        SM[i].swnd.size = 5;
     }
     pthread_t Rid, Sid;
     pthread_attr_t attr;

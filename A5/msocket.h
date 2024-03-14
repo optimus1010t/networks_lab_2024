@@ -29,6 +29,8 @@
 #define MAXSEQNO 10
 #define MAXSOCKETS 25
 
+#define MAXBUF 1030
+
 #define SOCK_MTP 9999
 #define T 5
 #define p 0.5
@@ -58,7 +60,6 @@ struct m_socket_handler {
 
     int send_status[SWND];  // 0: can be used, 1: havent sent or acked
     int recv_status[RWND];  // 0: delivered, 1: yet to be delivered
-
 
     int swnd_markers[2];  // starting and ending index of swnd
     int rwnd_markers[2];  // starting and ending index of rwnd
