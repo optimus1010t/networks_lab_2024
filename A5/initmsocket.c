@@ -1,24 +1,28 @@
 #include "msocket.h"
 
+#define SEM_MACRO 5
+#define SHM_MACRO 6
+
+
 int main() {
     int shm_sockhand;
-    shm_sockhand = shmget(ftok("msocket.h", 6), MAXSOCKETS*sizeof(struct m_socket_handler), 0777 | IPC_CREAT);
+    shm_sockhand = shmget(ftok("msocket.h", SHM_MACRO), MAXSOCKETS*sizeof(struct m_socket_handler), 0777 | IPC_CREAT);
     struct m_socket_handler* SM = (struct m_socket_handler*)shmat(shm_sockhand, NULL, 0);
     if(shm_sockhand == -1){
         perror("shmget");
         exit(1);
     }
     
-    int sem_join = semget(ftok("msocket.h", 7), MAXSOCKETS, 0777 | IPC_CREAT);
+    int sem_join = semget(ftok("msocket.h", SEM_MACRO), MAXSOCKETS, 0777 | IPC_CREAT);
     if (sem_join == -1) {
         perror("semget");
-        return;
+        return 1;
     }
 
     for (int i = 0; i < MAXSOCKETS; i++) {
         if (semctl(sem_join, i, SETVAL, 1) == -1) {
             perror("semctl");
-            return;
+            return 1;
         }
     }
 
@@ -52,5 +56,6 @@ int main() {
     pthread_join(Sid, NULL);
 
     shmctl(shm_sockhand, IPC_RMID, NULL);
+    semctl(sem_join, 0, IPC_RMID);
     return 0;
 }

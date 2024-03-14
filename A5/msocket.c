@@ -1,16 +1,29 @@
 #include "msocket.h"
 
 #define wait(s) semop(s, &pop, 1) 
-#define signal(s) semop(s, &vop, 1) 
+#define signall(s) semop(s, &vop, 1) 
 
+#define SEM_MACRO 5
+#define SHM_MACRO 6
+
+// write a signal handler for ctrl c
+
+void sighandler (int signum) {
+    int shm_sockhand = shmget(ftok("msocket.h", SHM_MACRO), MAXSOCKETS*sizeof(struct m_socket_handler), 0777 | IPC_CREAT);
+    shmctl(shm_sockhand, IPC_RMID, NULL);
+    int sem_join = semget(ftok("msocket.h", SEM_MACRO), MAXSOCKETS, 0777 | IPC_CREAT);
+    semctl(sem_join, 0, IPC_RMID);
+    exit(0);
+}
 
 int sendACK(int sockfd, int lastInorderSeqNum, int windowSize, int index) {
-    int sem_join = semget(ftok("msocket.h", 7), MAXSOCKETS, 0777 | IPC_CREAT);
+    signal(SIGINT, sighandler);
+    int sem_join = semget(ftok("msocket.h", SEM_MACRO), MAXSOCKETS, 0777 | IPC_CREAT);
     struct sembuf pop, vop;
     pop.sem_num = vop.sem_num = 0;
     pop.sem_flg = vop.sem_flg = 0;
     pop.sem_op = -1; vop.sem_op = 1;
-    int shm_sockhand = shmget(ftok("msocket.h", 6), MAXSOCKETS*sizeof(struct m_socket_handler), 0777 | IPC_CREAT);
+    int shm_sockhand = shmget(ftok("msocket.h", SHM_MACRO), MAXSOCKETS*sizeof(struct m_socket_handler), 0777 | IPC_CREAT);
     struct m_socket_handler* SM = (struct m_socket_handler*)shmat(shm_sockhand, NULL, 0);
 
     struct sockaddr_in addr;
@@ -36,12 +49,13 @@ int sendACK(int sockfd, int lastInorderSeqNum, int windowSize, int index) {
 // ???? how to check for dest ip and port if we are not sending 
 
 void* R(){
-    int sem_join = semget(ftok("msocket.h", 7), MAXSOCKETS, 0777 | IPC_CREAT);
+    signal(SIGINT, sighandler);
+    int sem_join = semget(ftok("msocket.h", SEM_MACRO), MAXSOCKETS, 0777 | IPC_CREAT);
     struct sembuf pop, vop;
     pop.sem_num = vop.sem_num = 0;
     pop.sem_flg = vop.sem_flg = 0;
     pop.sem_op = -1; vop.sem_op = 1;
-    int shm_sockhand = shmget(ftok("msocket.h", 6), MAXSOCKETS*sizeof(struct m_socket_handler), 0777 | IPC_CREAT);
+    int shm_sockhand = shmget(ftok("msocket.h", SHM_MACRO), MAXSOCKETS*sizeof(struct m_socket_handler), 0777 | IPC_CREAT);
     struct m_socket_handler* SM = (struct m_socket_handler*)shmat(shm_sockhand, NULL, 0);
     while (1){
         fd_set fds;
@@ -51,7 +65,7 @@ void* R(){
             pop.sem_num = vop.sem_num = i;
             wait(sem_join);
             if (SM[i].is_alloted != 0) FD_SET(SM[i].socket_id, &fds);
-            signal(sem_join);
+            signall(sem_join);
             pop.sem_num = vop.sem_num = 0;
         }
         struct timeval m_timer;
@@ -69,7 +83,7 @@ void* R(){
                 // ???? checking if this is same as the dest IP and port
                 int n = recvfrom(SM[i].socket_id, buf, MAXBUF, 0, (struct sockaddr*)&addr, &len);
                 if (n == -1 || dropMessage(p) == 1) {
-                    signal(sem_join);
+                    signall(sem_join);
                     pop.sem_num = vop.sem_num = 0;
                     continue;
                 }
@@ -121,7 +135,7 @@ void* R(){
                         iter = (iter+1)%SWND;
                     }
                     if (iter == (SM[i].swnd_markers[1]+1)%SWND) {
-                        signal(sem_join);
+                        signall(sem_join);
                         pop.sem_num = vop.sem_num = 0;
                         continue;
                     }
@@ -140,7 +154,7 @@ void* R(){
                     SM[i].swnd.size = window_size;
                 }                
             }
-            signal(sem_join);
+            signall(sem_join);
             pop.sem_num = vop.sem_num = 0;
         }
         
@@ -150,12 +164,13 @@ void* R(){
 }
 
 void* S(){
-    int sem_join = semget(ftok("msocket.h", 7), MAXSOCKETS, 0777 | IPC_CREAT);
+    signal(SIGINT, sighandler);
+    int sem_join = semget(ftok("msocket.h", SEM_MACRO), MAXSOCKETS, 0777 | IPC_CREAT);
     struct sembuf pop, vop;
     pop.sem_num = vop.sem_num = 0;
     pop.sem_flg = vop.sem_flg = 0;
     pop.sem_op = -1; vop.sem_op = 1;
-    int shm_sockhand = shmget(ftok("msocket.h", 6), MAXSOCKETS*sizeof(struct m_socket_handler), 0777 | IPC_CREAT);
+    int shm_sockhand = shmget(ftok("msocket.h", SHM_MACRO), MAXSOCKETS*sizeof(struct m_socket_handler), 0777 | IPC_CREAT);
     struct m_socket_handler* SM = (struct m_socket_handler*)shmat(shm_sockhand, NULL, 0);
     while (1) {
         for(int i=0; i<MAXSOCKETS; i++) {
@@ -173,7 +188,10 @@ void* S(){
                         addr.sin_addr.s_addr = inet_addr(SM[i].dest_ip_addr);
                         int len = sizeof(addr);
                         // add sequence number to the message and get the sequence number from the array ????
-                        int n = sendto(SM[i].socket_id, SM[i].send_buf[iter], strlen(SM[i].send_buf[iter]), 0, (struct sockaddr*)&addr, len);
+                        char temp_buf[MAXBUF];
+                        memcpy(temp_buf, &SM[i].swnd.seq_no[iter], sizeof(int));
+                        strcpy(temp_buf+sizeof(int), SM[i].send_buf[iter]);
+                        int n = sendto(SM[i].socket_id, temp_buf, strlen(SM[i].send_buf[iter])+sizeof(int), 0, (struct sockaddr*)&addr, len);
                         if (n == -1) {
                             continue;
                         }
@@ -203,7 +221,7 @@ void* S(){
                     iter = (iter+1)%SWND;
                 }
             }
-            signal(sem_join);
+            signall(sem_join);
             pop.sem_num = vop.sem_num = 0;
         }
         sleep(T/2);
@@ -212,16 +230,18 @@ void* S(){
 }
 
 void* G(){
+
     pthread_exit(NULL);
 }
 
-int m_recvfrom (int sockfd, void *buf, size_t len, int flags) {
-    int sem_join = semget(ftok("msocket.h", 7), MAXSOCKETS, 0777 | IPC_CREAT);
+int m_recvfrom (int sockfd, void *buf, size_t len) {
+    signal(SIGINT, sighandler);
+    int sem_join = semget(ftok("msocket.h", SEM_MACRO), MAXSOCKETS, 0777 | IPC_CREAT);
     struct sembuf pop, vop;
     pop.sem_num = vop.sem_num = 0;
     pop.sem_flg = vop.sem_flg = 0;
     pop.sem_op = -1; vop.sem_op = 1;
-    int shm_sockhand = shmget(ftok("msocket.h", 6), MAXSOCKETS*sizeof(struct m_socket_handler), 0777 | IPC_CREAT);
+    int shm_sockhand = shmget(ftok("msocket.h", SHM_MACRO), MAXSOCKETS*sizeof(struct m_socket_handler), 0777 | IPC_CREAT);
     struct m_socket_handler* SM = (struct m_socket_handler*)shmat(shm_sockhand, NULL, 0);
     pop.sem_num = vop.sem_num = sockfd;
     wait(sem_join);
@@ -235,28 +255,29 @@ int m_recvfrom (int sockfd, void *buf, size_t len, int flags) {
             SM[sockfd].recv_status[j] = 0;
             SM[sockfd].recv_seq_no = (SM[sockfd].recv_seq_no+1)%MAXSEQNO;
             if (SM[sockfd].recv_seq_no == 0) SM[sockfd].recv_seq_no = 1;
-            signal(sem_join);
+            signall(sem_join);
             pop.sem_num = vop.sem_num = 0;
             return strlen(buf); // ???? what to do if the len is less than the actual len (strlen(buf))
         }
         else {
-            signal(sem_join);
+            signall(sem_join);
             pop.sem_num = vop.sem_num = 0;
             return -1;
         }
     }
-    signal(sem_join);
+    signall(sem_join);
     pop.sem_num = vop.sem_num = 0;
     return -1;
 }
 
-int m_sendto(int sockfd, const void *buf, size_t len, int flags) {  // ???? what checks for dest ip and port
-    int sem_join = semget(ftok("msocket.h", 7), MAXSOCKETS, 0777 | IPC_CREAT);
+int m_sendto(int sockfd, const void *buf, size_t len) {  // ???? what checks for dest ip and port
+    signal(SIGINT, sighandler);
+    int sem_join = semget(ftok("msocket.h", SEM_MACRO), MAXSOCKETS, 0777 | IPC_CREAT);
     struct sembuf pop, vop;
     pop.sem_num = vop.sem_num = 0;
     pop.sem_flg = vop.sem_flg = 0;
     pop.sem_op = -1; vop.sem_op = 1;
-    int shm_sockhand = shmget(ftok("msocket.h", 6), MAXSOCKETS*sizeof(struct m_socket_handler), 0777 | IPC_CREAT);
+    int shm_sockhand = shmget(ftok("msocket.h", SHM_MACRO), MAXSOCKETS*sizeof(struct m_socket_handler), 0777 | IPC_CREAT);
     struct m_socket_handler* SM = (struct m_socket_handler*)shmat(shm_sockhand, NULL, 0);
     pop.sem_num = vop.sem_num = sockfd;
     wait(sem_join);
@@ -269,29 +290,31 @@ int m_sendto(int sockfd, const void *buf, size_t len, int flags) {  // ???? what
             if (SM[sockfd].send_seq_no == 0) SM[sockfd].send_seq_no = 1;
             
             SM[sockfd].send_status[(SM[sockfd].swnd_markers[1]+1)%SWND] = 1;
-            signal(sem_join);
+            signall(sem_join);
             pop.sem_num = vop.sem_num = 0;
+            printf("sent %s \n", (char*)buf);
             return strlen(buf);
         }
         else {
-            signal(sem_join);
+            signall(sem_join);
             pop.sem_num = vop.sem_num = 0;
             return -1;
         }
     }else {
-        signal(sem_join);
+        signall(sem_join);
         pop.sem_num = vop.sem_num = 0;
         return -1;
     }
 }
 
 int m_socket(int domain, int type, int protocol){ 
-    int sem_join = semget(ftok("msocket.h", 7), MAXSOCKETS, 0777 | IPC_CREAT);
+    signal(SIGINT, sighandler);
+    int sem_join = semget(ftok("msocket.h", SEM_MACRO), MAXSOCKETS, 0777 | IPC_CREAT);
     struct sembuf pop, vop;
     pop.sem_num = vop.sem_num = 0;
     pop.sem_flg = vop.sem_flg = 0;
     pop.sem_op = -1; vop.sem_op = 1;
-    int shm_sockhand = shmget(ftok("msocket.h", 6), MAXSOCKETS*sizeof(struct m_socket_handler), 0777 | IPC_CREAT);
+    int shm_sockhand = shmget(ftok("msocket.h", SHM_MACRO), MAXSOCKETS*sizeof(struct m_socket_handler), 0777 | IPC_CREAT);
     struct m_socket_handler* SM = (struct m_socket_handler*)shmat(shm_sockhand, NULL, 0);
     if (type != SOCK_MTP) return -1;
     if (domain != AF_INET) return -1;
@@ -303,29 +326,29 @@ int m_socket(int domain, int type, int protocol){
             SM[i].is_alloted = 1;
             SM[i].socket_id = socket(AF_INET, SOCK_DGRAM, 0);
             if (SM[i].socket_id == -1) {
-                signal(sem_join);
+                signall(sem_join);
                 pop.sem_num = vop.sem_num = 0;
                 return -1;
             }
-            signal(sem_join);
+            signall(sem_join);
             pop.sem_num = vop.sem_num = 0;
             return i;
         }
-        signal(sem_join);
+        signall(sem_join);
         pop.sem_num = vop.sem_num = 0;
     }
     return -1;    
 }
 
-int m_bind(int sockfd, char source_ip[MAXIP], unsigned short int source_port, char dest_ip[MAXIP], unsigned short int dest_port){  
-    int sem_join = semget(ftok("msocket.h", 7), MAXSOCKETS, 0777 | IPC_CREAT);
+int m_bind(int sockfd, char* source_ip, int source_port, char* dest_ip, int dest_port){  
+    signal(SIGINT, sighandler);
+    int sem_join = semget(ftok("msocket.h", SEM_MACRO), MAXSOCKETS, 0777 | IPC_CREAT);
     struct sembuf pop, vop;
     pop.sem_num = vop.sem_num = 0;
     pop.sem_flg = vop.sem_flg = 0;
     pop.sem_op = -1; vop.sem_op = 1;
-    int shm_sockhand = shmget(ftok("msocket.h", 6), MAXSOCKETS*sizeof(struct m_socket_handler), 0777 | IPC_CREAT);
+    int shm_sockhand = shmget(ftok("msocket.h", SHM_MACRO), MAXSOCKETS*sizeof(struct m_socket_handler), 0777 | IPC_CREAT);
     struct m_socket_handler* SM = (struct m_socket_handler*)shmat(shm_sockhand, NULL, 0);
-    
     pop.sem_num = vop.sem_num = sockfd; 
     wait(sem_join);
     if (SM[sockfd].is_alloted == 1){
@@ -335,27 +358,32 @@ int m_bind(int sockfd, char source_ip[MAXIP], unsigned short int source_port, ch
         SM[sockfd].dest_port = dest_port;
         struct sockaddr_in addr;
         addr.sin_family = AF_INET;
-        addr.sin_port = htons((unsigned short)source_port);
+        addr.sin_port = htons(source_port);
         addr.sin_addr.s_addr = inet_addr(source_ip);
-        if (bind(sockfd, (struct sockaddr*)&addr, sizeof(addr)) == -1) {
-            signal(sem_join);
+        if (bind(SM[sockfd].socket_id, (struct sockaddr*)&addr, sizeof(addr)) == -1) {
+            signall(sem_join);
             pop.sem_num = vop.sem_num = 0;
             return -1;
         }
-        else return 0;
+        else { 
+            signall(sem_join);
+            pop.sem_num = vop.sem_num = 0;
+            return 0;
+        }
     }
-    signal(sem_join);
+    signall(sem_join);
     pop.sem_num = vop.sem_num = 0;
     return -1;
 }
 
 int m_close(int fd){ 
-    int sem_join = semget(ftok("msocket.h", 7), MAXSOCKETS, 0777 | IPC_CREAT);
+    signal(SIGINT, sighandler);
+    int sem_join = semget(ftok("msocket.h", SEM_MACRO), MAXSOCKETS, 0777 | IPC_CREAT);
     struct sembuf pop, vop;
     pop.sem_num = vop.sem_num = 0;
     pop.sem_flg = vop.sem_flg = 0;
     pop.sem_op = -1; vop.sem_op = 1;
-    int shm_sockhand = shmget(ftok("msocket.h", 6), MAXSOCKETS*sizeof(struct m_socket_handler), 0777 | IPC_CREAT);
+    int shm_sockhand = shmget(ftok("msocket.h", SHM_MACRO), MAXSOCKETS*sizeof(struct m_socket_handler), 0777 | IPC_CREAT);
     struct m_socket_handler* SM = (struct m_socket_handler*)shmat(shm_sockhand, NULL, 0);
     for (int i=0; i<MAXSOCKETS; i++){
         pop.sem_num = vop.sem_num = i;
@@ -363,11 +391,11 @@ int m_close(int fd){
         if (SM[i].is_alloted == 1 && SM[i].socket_id == fd) {
             SM[i].is_alloted = 0;
             close(SM[i].socket_id);
-            signal(sem_join);
+            signall(sem_join);
             pop.sem_num = vop.sem_num = 0;
             return 0;
-        }else{
-            signal(sem_join);
+        } else {
+            signall(sem_join);
             pop.sem_num = vop.sem_num = 0;
             return -1;
         } 
@@ -375,6 +403,7 @@ int m_close(int fd){
 }
 
 int dropMessage(float pp) { 
+    signal(SIGINT, sighandler);
     // generate a random number between 0 and 1
     float m_num = (float)rand()/(float)(RAND_MAX);
     if (m_num < pp) {

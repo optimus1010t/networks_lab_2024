@@ -52,14 +52,14 @@ struct m_socket_handler {
     pid_t process_id;
     int socket_id;
     char src_ip_addr[MAXIP];
-    unsigned short int src_port;
+    int src_port;
     char send_buf[SWND][MAXBLOCK];
     char recv_buf[RWND][MAXBLOCK];
     struct wnd rwnd;
     struct wnd swnd;
 
     char dest_ip_addr[MAXIP]; // destination ip
-    unsigned short int dest_port; // destination port
+    int dest_port; // destination port
 
     int send_seq_no; // next sequence number to be sent 
     int recv_seq_no; // next expected sequence number
@@ -74,9 +74,9 @@ struct m_socket_handler {
 };
 
 int m_socket(int domain, int type, int protocol);
-int m_bind(int sockfd, char source_ip[MAXIP], unsigned short int source_port, char dest_ip[MAXIP], unsigned short int dest_port);
-int m_sendto(int sockfd, const void *buf, size_t len, int flags);
-int m_recvfrom(int sockfd, void *buf, size_t len, int flags);
+int m_bind(int sockfd, char* source_ip, int source_port, char* dest_ip, int dest_port);
+int m_sendto(int sockfd, const void *buf, size_t len);
+int m_recvfrom(int sockfd, void *buf, size_t len);
 int m_close(int fd);
 
 void* R();
