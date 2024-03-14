@@ -16,16 +16,16 @@ int main() {
         memset(SM[i].recv_buf, 0, 10*MAXBLOCK);
         SM[i].send_seq_no = 1;
         SM[i].recv_seq_no = 1;
-        SM[i].swnd_markers[0] = 0; SM[i].swnd_markers[1] = SWND-1;
-        SM[i].rwnd_markers[0] = 0; SM[i].rwnd_markers[1] = RWND-1;
+        SM[i].swnd_markers[0] = 0; SM[i].swnd_markers[1] = (MAXWNDW-1) < MAXSEQNO/2 ? (SWND-1) : MAXSEQNO/2;
+        SM[i].rwnd_markers[0] = 0; SM[i].rwnd_markers[1] = (MAXWNDW-1) < MAXSEQNO/2 ? (RWND-1) : MAXSEQNO/2;
         for (int j=0; j<(RWND > SWND ? RWND : SWND); j++){
             SM[i].rwnd.seq_no[j] = -1;
             SM[i].swnd.seq_no[j] = -1;
             if (j <= SWND )SM[i].send_status[j] = 0;
             if (j <= RWND )SM[i].recv_status[j] = 0;
         }
-        SM[i].rwnd.size = 7;
-        SM[i].swnd.size = 5;
+        SM[i].rwnd.size = MAXWNDW;
+        SM[i].swnd.size = MAXWNDW;
     }
     pthread_t Rid, Sid;
     pthread_attr_t attr;

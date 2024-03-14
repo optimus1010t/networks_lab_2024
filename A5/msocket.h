@@ -26,8 +26,9 @@
 #define RWND 10
 #define SWND 5
 #define MAXIP 50
-#define MAXSEQNO 10
+#define MAXSEQNO 15
 #define MAXSOCKETS 25
+#define MAXWNDW 5
 
 #define MAXBUF 1030
 
