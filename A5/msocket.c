@@ -94,7 +94,13 @@ void* S(){
     int shm_sockhand = shmget(ftok("msocket.h", 6), MAXSOCKETS*sizeof(struct m_socket_handler), 0777 | IPC_CREAT);
     struct m_socket_handler* SM = (struct m_socket_handler*)shmat(shm_sockhand, NULL, 0);
     while (1) {
-
+        for(int i=0; i<MAXSOCKETS; i++) {
+            pop.sem_num = vop.sem_num = i;
+            wait(sem_join);
+            
+            signal(sem_join);
+            pop.sem_num = vop.sem_num = 0;
+        }
     }
     pthread_exit(NULL);
 }
