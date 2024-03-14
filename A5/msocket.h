@@ -36,6 +36,12 @@
 #define T 5
 #define p 0.5
 
+struct ACKPacket {
+    char message[4]; 
+    int lastInorderSeqNum;
+    int windowSize;
+};
+
 struct wnd {
     int size;
     int seq_no[RWND > SWND ? RWND : SWND];
@@ -52,12 +58,11 @@ struct m_socket_handler {
     struct wnd rwnd;
     struct wnd swnd;
 
-    char dest_ip_addr[MAXIP];
-    unsigned short int dest_port;
+    char dest_ip_addr[MAXIP]; // destination ip
+    unsigned short int dest_port; // destination port
 
-    int send_seq_no;
-    int recv_seq_no;
-
+    int send_seq_no; // next sequence number to be sent 
+    int recv_seq_no; // next expected sequence number
 
     int send_status[SWND];  // 0: can be used, 1: havent sent or acked
     int recv_status[RWND];  // 0: delivered, 1: yet to be delivered
@@ -71,6 +76,7 @@ int m_bind(int sockfd, char source_ip[MAXIP], unsigned short int source_port, ch
 int m_sendto(int sockfd, const void *buf, size_t len, int flags);
 int m_recvfrom(int sockfd, void *buf, size_t len, int flags);
 int m_close(int fd);
+void sendACK(int sockfd, int lastInorderSeqNum, int windowSize);
 
 void* R();
 void* S();
