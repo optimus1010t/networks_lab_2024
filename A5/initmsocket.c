@@ -21,8 +21,8 @@ int main() {
         for (int j=0; j<(RWND > SWND ? RWND : SWND); j++){
             SM[i].rwnd.seq_no[j] = -1;
             SM[i].swnd.seq_no[j] = -1;
-            if (j <= SWND )SM[i].send_status[j] = 0;
-            if (j <= RWND )SM[i].recv_status[j] = 0;
+            if (j <= SWND ) { SM[i].send_status[j] = 0; SM[i].send_time[j].tv_sec = 0; SM[i].send_time[j].tv_usec = 0; }
+            if (j <= RWND ) SM[i].recv_status[j] = 0;
         }
         SM[i].rwnd.size = MAXWNDW;
         SM[i].swnd.size = MAXWNDW;

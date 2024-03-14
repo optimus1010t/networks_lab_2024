@@ -41,42 +41,45 @@ void* R(){
                 struct sockaddr_in addr;
                 int len = sizeof(addr);
                 char buf[MAXBUF];
-                // ???? check if the msg can even be recieved
-                int n = recvfrom(SM[i].socket_id, buf, MAXBUF, 0, (struct sockaddr*)&addr, &len); // ???? use MSG_PEEK 
-                // ???? checking if this is same as teh dest IP and port
+                // ???? checking if this is same as the dest IP and port
+                int n = recvfrom(SM[i].socket_id, buf, MAXBUF, 0, (struct sockaddr*)&addr, &len);
                 if (n == -1 || dropMessage(p) == 1) {
                     signal(sem_join);
                     pop.sem_num = vop.sem_num = 0;
                     continue;
                 }
-                // main thing to do
                 int msg_seq_no;
                 memcpy(&msg_seq_no, buf, sizeof(int));
                 msg_seq_no = ntohl(msg_seq_no);
                 size_t msg_len = n-sizeof(int);
-                int base_seq = SM[i].recv_seq_no;
-                int iter = SM[i].rwnd_markers[0];
-                int flag = 0;
-                while ( iter != SM[i].rwnd_markers[1]+1 ) {
-                    if (SM[i].recv_status[iter] == 0) {
-                        strcpy(SM[i].recv_buf[iter], buf+sizeof(int));
-                        SM[i].recv_status[iter] = 1;
-                        if (msg_seq_no == base_seq  && iter == SM[i].rwnd_markers[0]) {
-                            SM[i].rwnd_markers[0] = (SM[i].rwnd_markers[0]+1)%RWND;
-                            if (SM[i].recv_status[(SM[i].rwnd_markers[1]+1)%RWND] == 0) SM[i].rwnd_markers[1] = (SM[i].rwnd_markers[1]+1)%RWND;
-                            else SM[i].rwnd.size -= 1;
-                            // ???? send ACK with updated seq no. and wndw size
+                if (msg_seq_no != 0) {    
+                    int base_seq = SM[i].recv_seq_no;
+                    int iter = SM[i].rwnd_markers[0];
+                    int flag = 0;
+                    while ( iter != SM[i].rwnd_markers[1]+1 ) {
+                        if (SM[i].recv_status[iter] == 0) {
+                            strcpy(SM[i].recv_buf[iter], buf+sizeof(int));
+                            SM[i].recv_status[iter] = 1;
+                            if (msg_seq_no == base_seq  && iter == SM[i].rwnd_markers[0]) {
+                                SM[i].rwnd_markers[0] = (SM[i].rwnd_markers[0]+1)%RWND;
+                                if (SM[i].recv_status[(SM[i].rwnd_markers[1]+1)%RWND] == 0) SM[i].rwnd_markers[1] = (SM[i].rwnd_markers[1]+1)%RWND;
+                                else SM[i].rwnd.size -= 1;
+                                // ???? send ACK with updated seq no. and wndw size
+                            }
+                            flag = 1;
+                            SM[i].recv_seq_no = (SM[i].recv_seq_no+1)%MAXSEQNO;
+                            break;
                         }
-                        flag = 1;
-                        SM[i].recv_seq_no = (SM[i].recv_seq_no+1)%MAXSEQNO;
-                        break;
+                        iter = (iter+1)%RWND;
+                        base_seq = (base_seq+1)%MAXSEQNO;
+                        if (base_seq == 0) base_seq = 1;
                     }
-                    iter = (iter+1)%RWND;
-                    base_seq = (base_seq+1)%MAXSEQNO;
-                    if (base_seq == 0) base_seq = 1;
+                    if (flag == 0) {
+                        // ???? send ACK with last seq no. and wndw size
+                    }
                 }
-                if (flag == 0) {
-                    // ???? send ACK with last seq no. and wndw size
+                else {
+                    // ???? handling if the recieved msg is an ACK
                 }                
                 signal(sem_join);
                 pop.sem_num = vop.sem_num = 0;
@@ -97,10 +100,54 @@ void* S(){
         for(int i=0; i<MAXSOCKETS; i++) {
             pop.sem_num = vop.sem_num = i;
             wait(sem_join);
-            
+            struct timeval curr_time;
+            gettimeofday(&curr_time, NULL);
+            if (SM[i].send_time[SM[i].swnd_markers[0]].tv_sec != 0 && curr_time.tv_sec - SM[i].send_time[SM[i].swnd_markers[0]].tv_sec > T) {
+                int iter = SM[i].swnd_markers[0];
+                while (iter != SM[i].swnd_markers[1]+1) {
+                    if (SM[i].send_status[iter] == 1 && SM[i].is_alloted == 1 && SM[i].swnd.seq_no[iter] != -1) {
+                        struct sockaddr_in addr;
+                        addr.sin_family = AF_INET;
+                        addr.sin_port = htons(SM[i].dest_port);
+                        addr.sin_addr.s_addr = inet_addr(SM[i].dest_ip_addr);
+                        int len = sizeof(addr);
+                        // add sequence number to the message and get the sequence number from the array ????
+                        int n = sendto(SM[i].socket_id, SM[i].send_buf[iter], strlen(SM[i].send_buf[iter]), 0, (struct sockaddr*)&addr, len);
+                        // set current time
+                        if (n == -1) {
+                            continue;
+                        }
+                        SM[i].send_time[iter] = curr_time;
+                    }
+                    iter = (iter+1)%SWND;
+                }
+            }
+            else {
+                // send the messages inside the send window
+                int iter = SM[i].swnd_markers[0];
+                while (iter != SM[i].swnd_markers[1]+1) {
+                    if (SM[i].send_status[iter] == 1 && SM[i].is_alloted == 1) {
+                        struct sockaddr_in addr;
+                        addr.sin_family = AF_INET;
+                        addr.sin_port = htons(SM[i].dest_port);
+                        addr.sin_addr.s_addr = inet_addr(SM[i].dest_ip_addr);
+                        int len = sizeof(addr);
+                        // add sequencce number to the message ????
+                        int n = sendto(SM[i].socket_id, SM[i].send_buf[iter], strlen(SM[i].send_buf[iter]), 0, (struct sockaddr*)&addr, len);
+                        if (n == -1) {
+                            continue;
+                        }
+                        SM[i].send_time[iter] = curr_time;
+                        SM[i].swnd.seq_no[iter] = SM[i].send_seq_no;
+                        SM[i].send_seq_no = (SM[i].send_seq_no+1)%MAXSEQNO;
+                    }
+                    iter = (iter+1)%SWND;
+                }
+            }
             signal(sem_join);
             pop.sem_num = vop.sem_num = 0;
         }
+        sleep(T/2);
     }
     pthread_exit(NULL);
 }
