@@ -53,7 +53,7 @@ void* R(){
                 msg_seq_no = ntohl(msg_seq_no);
                 size_t msg_len = n-sizeof(int);
                 // strncpy(buf, buf+sizeof(int), msg_len); // do this wherever you want to save
-                
+
                 
 
                 signal(sem_join);
@@ -176,30 +176,30 @@ int m_bind(int sockfd, char source_ip[MAXIP], unsigned short int source_port, ch
     struct m_socket_handler* SM = (struct m_socket_handler*)shmat(shm_sockhand, NULL, 0);
     
     int flag = 0;
-    for (int i=0; i<MAXSOCKETS; i++){
-        pop.sem_num = vop.sem_num = i;
-        wait(sem_join);
-        if (SM[i].is_alloted == 1 && SM[i].socket_id == sockfd){
-            flag = 1;
-            strcpy(SM[i].src_ip_addr, source_ip);
-            SM[i].src_port = source_port;
-            strcpy(SM[i].dest_ip_addr, dest_ip);
-            SM[i].dest_port = dest_port;
-            struct sockaddr_in addr;
-            addr.sin_family = AF_INET;
-            addr.sin_port = htons((unsigned short)source_port);
-            addr.sin_addr.s_addr = inet_addr(source_ip);
-            if (bind(sockfd, (struct sockaddr*)&addr, sizeof(addr)) == -1) 
-            {
-                signal(sem_join);
-                pop.sem_num = vop.sem_num = 0;
-                return -1;
-            }
-            else return 0;
+    // for (int i=0; i<MAXSOCKETS; i++){
+    pop.sem_num = vop.sem_num = sockfd;
+    wait(sem_join);
+    if (SM[sockfd].is_alloted == 1){
+        flag = 1;
+        strcpy(SM[sockfd].src_ip_addr, source_ip);
+        SM[sockfd].src_port = source_port;
+        strcpy(SM[sockfd].dest_ip_addr, dest_ip);
+        SM[sockfd].dest_port = dest_port;
+        struct sockaddr_in addr;
+        addr.sin_family = AF_INET;
+        addr.sin_port = htons((unsigned short)source_port);
+        addr.sin_addr.s_addr = inet_addr(source_ip);
+        if (bind(sockfd, (struct sockaddr*)&addr, sizeof(addr)) == -1) 
+        {
+            signal(sem_join);
+            pop.sem_num = vop.sem_num = 0;
+            return -1;
         }
-        signal(sem_join);
-        pop.sem_num = vop.sem_num = 0;
+        else return 0;
     }
+    signal(sem_join);
+    pop.sem_num = vop.sem_num = 0;
+    // }
     if (flag == 0) return -1;
 }
 
