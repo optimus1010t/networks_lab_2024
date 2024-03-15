@@ -26,7 +26,7 @@
 #define RWND 10
 #define SWND 5
 #define MAXIP 50
-#define MAXSEQNO 15
+#define MAXSEQNO 16
 #define MAXSOCKETS 25
 #define MAXWNDW 5
 
@@ -65,12 +65,20 @@ struct m_socket_handler {
     int recv_seq_no; // next expected sequence number
 
     int send_status[SWND];  // 0: can be used, 1: havent sent or acked
-    int recv_status[RWND];  // 0: delivered, 1: yet to be delivered
+    int recv_status[RWND];  // 0: can be used, n: yet to be delivered with seq no. n
     // set timeval to store current time for send of messages
     struct timeval send_time[SWND];
 
     int swnd_markers[2];  // starting and ending index of swnd
     int rwnd_markers[2];  // starting and ending index of rwnd
+    int r_del_seq_no;
+};
+
+struct sock_info {
+    int sockfd;
+    char src_ip[MAXIP];
+    int src_port;
+    int err;
 };
 
 int m_socket(int domain, int type, int protocol);
@@ -78,9 +86,5 @@ int m_bind(int sockfd, char* source_ip, int source_port, char* dest_ip, int dest
 int m_sendto(int sockfd, const void *buf, size_t len);
 int m_recvfrom(int sockfd, void *buf, size_t len);
 int m_close(int fd);
-
-void* R();
-void* S();
-void* G();
 
 int dropMessage(float pp);

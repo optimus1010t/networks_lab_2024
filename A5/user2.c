@@ -23,13 +23,13 @@ int main(int argc, char const *argv[])
     dest_addr.sin_port = htons(8081);
     dest_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
 
-    sleep(5);
     if(m_bind(sockfd, "127.0.0.1", 8081, "127.0.0.1", 8080) < 0){
         perror("bind failed");
         return -1;
     }
-
     printf("Bind done\n");
+
+    sleep(10);
 
     char buf[] = "Hello from user1";
 
