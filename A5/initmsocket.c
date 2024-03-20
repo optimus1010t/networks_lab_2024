@@ -8,6 +8,8 @@
 #define wait(s) semop(s, &pop, 1) 
 #define signall(s) semop(s, &vop, 1)
 
+// ???? check resending of the packets
+
 void sighandler (int signum) {
     int shm_sockhand = shmget(ftok("msocket.h", SHM_MACRO), MAXSOCKETS*sizeof(struct m_socket_handler), 0777 | IPC_CREAT);
     shmctl(shm_sockhand, IPC_RMID, NULL);
@@ -184,9 +186,6 @@ void* S(){
     int shm_sockhand = shmget(ftok("msocket.h", SHM_MACRO), MAXSOCKETS*sizeof(struct m_socket_handler), 0777 | IPC_CREAT);
     struct m_socket_handler* SM = (struct m_socket_handler*)shmat(shm_sockhand, NULL, 0);
     while (1) {
-        // #ifdef DEBUG
-        // printf("in the S function\n"); fflush(stdout);
-        // #endif
         for(int i=0; i<MAXSOCKETS; i++) {
             pop.sem_num = vop.sem_num = i;
             wait(sem_join);
