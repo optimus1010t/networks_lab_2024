@@ -64,13 +64,11 @@ struct m_socket_handler {
     int send_seq_no; // next sequence number to be sent 
     int recv_seq_no; // next expected sequence number
 
-    // int send_status[SWND];  // 0: can be used, 1: havent sent or acked // redundant ig ????
     int recv_status[RWND];  // 0: can be used, n: yet to be delivered with seq no. n // redundant ig ????
-    // set timeval to store current time for send of messages
     struct timeval send_time[SWND];
 
     int swnd_markers[2];  // starting and ending index of swnd
-    int rwnd_markers[3];  // starting and ending index of rwnd
+    int rwnd_markers[3];  // starting, ending index and acked index of rwnd
 };
 
 struct sock_info {
