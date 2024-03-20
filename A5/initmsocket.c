@@ -97,8 +97,8 @@ void* R() {
                 if (msg_seq_no > 0 && msg_seq_no < MAXSEQNO) {    
                     int base_seq = SM[i].recv_seq_no;
                     int iter = SM[i].rwnd_markers[0];
-                    int flag = 0;
-                    while ( iter != (SM[i].rwnd_markers[1]+1)%RWND) {
+                    int flag = 0; int j = 0;
+                    while ( j < SM[i].rwnd.size) {
                         if (msg_seq_no == base_seq) {
                             if (iter == SM[i].rwnd_markers[0]) {
                                 strcpy(SM[i].recv_buf[iter], buf+1);
@@ -107,23 +107,25 @@ void* R() {
                                 printf ("setting SM[%d].recv_buf[%d] to %s\n", i, iter, SM[i].recv_buf[iter]);
                                 fflush(stdout);
                                 #endif
-                                while (SM[i].recv_status[iter] != 0 && iter != (SM[i].rwnd_markers[1]+1)%RWND) { 
+                                while (SM[i].recv_status[iter] != 0 && j < SM[i].rwnd.size) { 
                                     SM[i].rwnd_markers[0] = (SM[i].rwnd_markers[0]+1)%RWND;
                                     if (SM[i].recv_status[(SM[i].rwnd_markers[1]+1)%RWND] == 0) SM[i].rwnd_markers[1] = (SM[i].rwnd_markers[1]+1)%RWND;
                                     else SM[i].rwnd.size -= 1;
                                     SM[i].recv_seq_no = (SM[i].recv_seq_no+1)%MAXSEQNO;
                                     iter = (iter+1)%RWND;
+                                    j++;
                                 }
                                 int len = sendACK(SM[i].socket_id, (SM[i].recv_seq_no-1), SM[i].rwnd.size, i);
                                 flag = 1;
                             }
                             else {
-                                strcpy(SM[i].recv_buf[iter], buf+1);
+                                strcpy(SM[i].recv_buf[iter],buf+1);
                                 SM[i].recv_status[iter] = msg_seq_no;
                                 flag = 1;
                             }
                         }                        
                         iter = (iter+1)%RWND;
+                        j++;
                         base_seq = (base_seq+1)%MAXSEQNO;
                         if (base_seq == 0) base_seq = 1;
                     }

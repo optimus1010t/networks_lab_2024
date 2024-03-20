@@ -8,7 +8,7 @@
 #define SEM_MACRO2 7
 #define SHM_MACRO2 8
 
-// write a signal handler for ctrl c
+// ???? add macros
 void sighandler (int signum) {
     int shm_sockhand = shmget(ftok("msocket.h", SHM_MACRO), MAXSOCKETS*sizeof(struct m_socket_handler), 0777 | IPC_CREAT);
     shmctl(shm_sockhand, IPC_RMID, NULL);
