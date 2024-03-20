@@ -152,7 +152,7 @@ void* R() {
                     iter = SM[i].swnd_markers[0]; int k = 0;
                     while (k <= j) {
                         memset(SM[i].send_buf[iter], 0, MAXBLOCK);
-                        SM[i].send_status[iter] = 0;
+                        // SM[i].send_status[iter] = 0;
                         SM[i].send_time[iter].tv_sec = 0;
                         SM[i].send_time[iter].tv_usec = 0;
                         SM[i].swnd.seq_no[iter] = -1;
@@ -198,7 +198,7 @@ void* S(){
             if (SM[i].send_time[SM[i].swnd_markers[0]].tv_usec != 0 && curr_time.tv_usec - SM[i].send_time[SM[i].swnd_markers[0]].tv_usec > (((int)T) * 1000000)) {
                 int iter = SM[i].swnd_markers[0]; int j = 0;
                 while (j < SM[i].swnd.size) {
-                    if (SM[i].send_status[iter] == 1 && SM[i].is_alloted == 1 && SM[i].swnd.seq_no[iter] != -1) {
+                    if (/*SM[i].send_status[iter] == 1 && */SM[i].is_alloted == 1 && SM[i].swnd.seq_no[iter] != -1) {
                         struct sockaddr_in addr;
                         addr.sin_family = AF_INET;
                         addr.sin_port = htons(SM[i].dest_port);
@@ -233,7 +233,7 @@ void* S(){
                     // printf("i : %d send status : %d and send time : %d and is alloted : %d and seq no : %d\n",i, SM[i].send_status[iter], SM[i].send_time[iter].tv_usec, SM[i].is_alloted, SM[i].swnd.seq_no[iter]);
                     // fflush(stdout);
                     // #endif
-                    if (SM[i].send_status[iter] == 1 && SM[i].send_time[iter].tv_usec == 0 && SM[i].is_alloted == 1 && SM[i].swnd.seq_no[iter] != -1) {
+                    if (/*SM[i].send_status[iter] == 1 && */SM[i].send_time[iter].tv_usec == 0 && SM[i].is_alloted == 1 && SM[i].swnd.seq_no[iter] != -1) {
                         struct sockaddr_in addr;
                         addr.sin_family = AF_INET;
                         addr.sin_port = htons(SM[i].dest_port);
@@ -340,7 +340,7 @@ int main() {
         for (int j=0; j<(RWND > SWND ? RWND : SWND); j++){
             SM[i].rwnd.seq_no[j] = -1;
             SM[i].swnd.seq_no[j] = -1;
-            if (j < SWND ) { SM[i].send_status[j] = 0; SM[i].send_time[j].tv_sec = 0; SM[i].send_time[j].tv_usec = 0; }
+            if (j < SWND ) { /*SM[i].send_status[j] = 0; */SM[i].send_time[j].tv_sec = 0; SM[i].send_time[j].tv_usec = 0; }
             if (j < RWND ) SM[i].recv_status[j] = 0;
         }
         SM[i].rwnd.size = MAXWNDW;

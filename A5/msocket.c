@@ -71,19 +71,19 @@ int m_sendto(int sockfd, const void *buf, size_t len) {  // ???? what checks for
     wait(sem_join);
     if (SM[sockfd].is_alloted == 1) {
         int iter = SM[sockfd].swnd_markers[0]; int flag = 0;
-        while (SM[sockfd].send_status[iter] != 0 && flag < MAXWNDW) {
+        while (SM[sockfd].swnd.seq_no[iter] != -1 && flag < MAXWNDW) {
             flag++;
             iter = (iter+1)%SWND;
         }
-        if (SM[sockfd].send_status[iter] == 0) {
+        if (SM[sockfd].swnd.seq_no[iter] == -1) {
             strcpy(SM[sockfd].send_buf[iter], (char*)buf); // ???? just doing for string bufs for now
             SM[sockfd].swnd.seq_no[iter] = SM[sockfd].send_seq_no;
             SM[sockfd].send_seq_no = (SM[sockfd].send_seq_no+1)%MAXSEQNO;
             if (SM[sockfd].send_seq_no == 0) SM[sockfd].send_seq_no = 1;
             
-            SM[sockfd].send_status[iter] = 1;
+            // SM[sockfd].send_status[iter] = 1;
             #ifdef DEBUG  
-            printf("Copying at %d value on SM at %d : %s and send status : %d\n", iter, sockfd, (char*)buf, SM[sockfd].send_status[iter]);
+            printf("Copying at %d value on SM at %d : %s and send status : %d\n", iter, sockfd, (char*)buf, SM[sockfd].swnd.seq_no[iter]);
             fflush(stdout);
             #endif
             signall(sem_join);
@@ -251,7 +251,7 @@ int m_close(int fd){
         for (int j=0; j<(RWND > SWND ? RWND : SWND); j++){
             SM[fd].rwnd.seq_no[j] = -1;
             SM[fd].swnd.seq_no[j] = -1;
-            if (j < SWND ) { SM[fd].send_status[j] = 0; SM[fd].send_time[j].tv_sec = 0; SM[fd].send_time[j].tv_usec = 0; }
+            if (j < SWND ) { /*SM[fd].send_status[j] = 0;*/ SM[fd].send_time[j].tv_sec = 0; SM[fd].send_time[j].tv_usec = 0; }
             if (j < RWND ) SM[fd].recv_status[j] = 0;
         }
         SM[fd].rwnd.size = MAXWNDW;
