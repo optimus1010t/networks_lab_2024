@@ -48,7 +48,7 @@ struct wnd {
 };
 
 struct m_socket_handler {
-    short int is_alloted;
+    int is_alloted;
     pid_t process_id;
     int socket_id;
     char src_ip_addr[MAXIP];
@@ -70,8 +70,7 @@ struct m_socket_handler {
     struct timeval send_time[SWND];
 
     int swnd_markers[2];  // starting and ending index of swnd
-    int rwnd_markers[2];  // starting and ending index of rwnd
-    int r_del_seq_no;
+    int rwnd_markers[3];  // starting and ending index of rwnd
 };
 
 struct sock_info {

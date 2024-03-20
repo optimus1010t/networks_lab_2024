@@ -37,6 +37,24 @@ int main(int argc, char const *argv[])
 
     printf("Received: %s\n", buf);
 
+    sleep(10);
+
+    if(m_recvfrom(sockfd,buf,1024) < 0){
+        perror("recvfrom failed");
+        return -1;
+    }
+
+    printf("Received: %s\n", buf);
+
+    sleep(10);
+
+    if(m_recvfrom(sockfd,buf,1024) < 0){
+        perror("recvfrom failed");
+        return -1;
+    }
+
+    printf("Received: %s\n", buf);
+
     sleep(100);
 
     if(m_close(sockfd) < 0){
