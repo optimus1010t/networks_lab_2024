@@ -20,6 +20,8 @@ void sighandler (int signum) {
     exit(0);
 }
 
+// ???? signal handling to close all open sockets
+
 int sendACK(int sockfd, int lastInorderSeqNum, int windowSize, int index) {
     signal(SIGINT, sighandler);
     int sem_join = semget(ftok("msocket.h", SEM_MACRO), MAXSOCKETS, 0777 | IPC_CREAT);
