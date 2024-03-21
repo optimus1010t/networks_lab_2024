@@ -235,7 +235,8 @@ int m_close(int fd){
     signall(sem_soc_create);
     pop.sem_num = vop.sem_num = 1;
     wait(sem_soc_create);
-    if (sock_info->err == 1) {
+    if (sock_info->err != 0) {
+        errno = sock_info->err;
         sock_info->err = 0;
         sock_info->sockfd=0;
         sock_info->src_port = 0;

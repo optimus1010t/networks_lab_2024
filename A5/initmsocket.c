@@ -405,8 +405,8 @@ int main() {
             // close the socket
             int m = close(sock_info->sockfd);
             if (m == -1) {
-                perror("close");
-                sock_info->err = 1;
+                // perror("close");
+                sock_info->err = errno;
                 pop.sem_num = vop.sem_num = 1;
                 signall(sem_soc_create);
                 continue;
