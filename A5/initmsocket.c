@@ -94,10 +94,10 @@ void* R() {
                     pop.sem_num = vop.sem_num = 0;
                     continue;
                 }
-                #ifdef DEBUG
-                    printf("window in R (%d,%d) at i: %d\n",SM[i].swnd_markers[0],SM[i].swnd_markers[1],i);
-                    fflush(stdout);
-                #endif
+                // #ifdef DEBUG
+                //     printf("window in R (%d,%d) at i: %d\n",SM[i].swnd_markers[0],SM[i].swnd_markers[1],i);
+                //     fflush(stdout);
+                // #endif
                 int msg_seq_no = MAXSEQNO;
                 msg_seq_no = (int)(buf[0]-'0');
                 if (msg_seq_no > 0 && msg_seq_no < MAXSEQNO) {    
@@ -213,10 +213,10 @@ void* S(){
                 pop.sem_num = vop.sem_num = 0;
                 continue;
             }
-            #ifdef DEBUG
-                printf("window in S (%d,%d) at i: %d\n",SM[i].swnd_markers[0],SM[i].swnd_markers[1],i);
-                fflush(stdout);
-            #endif
+            // #ifdef DEBUG
+            //     printf("window in S (%d,%d) at i: %d\n",SM[i].swnd_markers[0],SM[i].swnd_markers[1],i);
+            //     fflush(stdout);
+            // #endif
             long int duration = ((curr_time.tv_sec - SM[i].send_time[SM[i].swnd_markers[0]].tv_sec) * 1000000 + curr_time.tv_usec - SM[i].send_time[SM[i].swnd_markers[0]].tv_usec)/1000000;
             if ((SM[i].send_time[SM[i].swnd_markers[0]].tv_sec != 0 || SM[i].send_time[SM[i].swnd_markers[0]].tv_usec != 0) && duration > (int)T) {
                 int iter = SM[i].swnd_markers[0]; int j = 0;
@@ -375,7 +375,7 @@ int main() {
             // create a socket for the particular sockfd
             int sockfd = socket(AF_INET, SOCK_DGRAM, 0);
             if (sockfd == -1) {
-                perror("socket");
+                // perror("socket");
                 sock_info->err = 1;
                 pop.sem_num = vop.sem_num = 0;
                 signall(sem_soc_create);
@@ -391,8 +391,8 @@ int main() {
             addr.sin_port = htons(sock_info->src_port);
             addr.sin_addr.s_addr = inet_addr(sock_info->src_ip);
             if (bind(sock_info->sockfd, (struct sockaddr*)&addr, sizeof(addr)) == -1) {
-                perror("bind");
-                sock_info->err = 1;
+                // perror("bind");
+                sock_info->err = errno;
                 pop.sem_num = vop.sem_num = 1;
                 signall(sem_soc_create);
                 continue;

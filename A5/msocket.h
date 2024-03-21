@@ -21,6 +21,7 @@
 #include <sys/shm.h>
 #include <pthread.h>
 #include <sys/sem.h>
+#include <errno.h>
 
 #define MAXBLOCK 1024
 #define RWND 10

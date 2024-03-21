@@ -33,6 +33,7 @@ int m_recvfrom (int sockfd, void *buf, size_t len) {
     struct m_socket_handler* SM = (struct m_socket_handler*)shmat(shm_sockhand, NULL, 0);
     pop.sem_num = vop.sem_num = sockfd;
     wait(sem_join);
+    errno = 0;
     for (int i = 0; i < RWND; i++) {
         if (SM[sockfd].recv_status[i] == SM[sockfd].rwnd_markers[2]) {
             #ifdef DEBUG
@@ -55,6 +56,7 @@ int m_recvfrom (int sockfd, void *buf, size_t len) {
     }
     signall(sem_join);
     pop.sem_num = vop.sem_num = 0;
+    errno = ENOMSG;
     return -1;
 }
 
@@ -69,6 +71,7 @@ int m_sendto(int sockfd, const void *buf, size_t len) {  // ???? what checks for
     struct m_socket_handler* SM = (struct m_socket_handler*)shmat(shm_sockhand, NULL, 0);
     pop.sem_num = vop.sem_num = sockfd;
     wait(sem_join);
+    errno = 0;
     if (SM[sockfd].is_alloted == 1) {
         int iter = SM[sockfd].swnd_markers[0]; int flag = 0;
         while (SM[sockfd].swnd.seq_no[iter] != -1 && flag < MAXWNDW) {
@@ -93,6 +96,7 @@ int m_sendto(int sockfd, const void *buf, size_t len) {  // ???? what checks for
     }
     signall(sem_join);
     pop.sem_num = vop.sem_num = 0;
+    errno = ENOBUFS;
     return -1;
 }
 
@@ -119,6 +123,7 @@ int m_socket(int domain, int type, int protocol){
     signall(sem_soc_create);
     pop.sem_num = vop.sem_num = 1;
     wait(sem_soc_create);
+    errno = 0;
     if (sock_info->err == 1) {
         sock_info->err = 0;
         sock_info->sockfd=0;
@@ -142,13 +147,14 @@ int m_socket(int domain, int type, int protocol){
         }
         signall(sem_join);
     }
+    errno = ENOBUFS;
     sock_info->sockfd=0;
     pop.sem_num = vop.sem_num = 2;
     signall(sem_soc_create);
     return -1;
 }
 
-int m_bind(int sockfd, char* source_ip, int source_port, char* dest_ip, int dest_port){  
+int m_bind(int sockfd, char* source_ip, int source_port, char* dest_ip, int dest_port){
     signal(SIGINT, sighandler);
     int sem_join = semget(ftok("msocket.h", SEM_MACRO), MAXSOCKETS, 0777 | IPC_CREAT);
     struct sembuf pop, vop;
@@ -170,8 +176,8 @@ int m_bind(int sockfd, char* source_ip, int source_port, char* dest_ip, int dest
     signall(sem_soc_create);
     pop.sem_num = vop.sem_num = 1;
     wait(sem_soc_create);
-    if (sock_info->err == 1) {
-        // printf("effed up\n");
+    if (sock_info->err != 0) {
+        errno = sock_info->err;
         sock_info->err = 0;
         sock_info->sockfd=0;
         memset(sock_info->src_ip, 0, MAXIP);
@@ -180,7 +186,6 @@ int m_bind(int sockfd, char* source_ip, int source_port, char* dest_ip, int dest
         signall(sem_soc_create);
         return -1;
     }
-    // printf("did not eff up\n");
     pop.sem_num = vop.sem_num = sockfd;
     wait(sem_join);
     if (SM[sockfd].is_alloted == 1) {
@@ -202,8 +207,10 @@ int m_bind(int sockfd, char* source_ip, int source_port, char* dest_ip, int dest
     sock_info->sockfd=0;
     memset(sock_info->src_ip, 0, MAXIP);
     sock_info->src_port = 0;
+    errno = ENOBUFS;
     pop.sem_num = vop.sem_num = 2;
     signall(sem_soc_create);
+    return -1;
 }
 
 int m_close(int fd){ 
