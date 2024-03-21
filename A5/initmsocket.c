@@ -85,10 +85,6 @@ void* R() {
                 char buf[MAXBUF]; memset(buf, 0, MAXBUF);
                 // ???? checking if this is same as the dest IP and port
                 int n = recvfrom(SM[i].socket_id, buf, MAXBUF, 0, (struct sockaddr*)&addr, &len);
-                #ifdef DEBUG
-                printf("got recieved %s \n", buf);
-                fflush(stdout);
-                #endif
                 if (n == -1 || dropMessage(p) == 1) {
                     #ifdef DEBUG
                     printf("dropping %s \n", buf);
@@ -98,13 +94,17 @@ void* R() {
                     pop.sem_num = vop.sem_num = 0;
                     continue;
                 }
+                #ifdef DEBUG
+                    printf("window in R (%d,%d) at i: %d\n",SM[i].swnd_markers[0],SM[i].swnd_markers[1],i);
+                    fflush(stdout);
+                #endif
                 int msg_seq_no = MAXSEQNO;
                 msg_seq_no = (int)(buf[0]-'0');
                 if (msg_seq_no > 0 && msg_seq_no < MAXSEQNO) {    
                     int base_seq = SM[i].recv_seq_no;
                     int iter = SM[i].rwnd_markers[0];
                     int flag = 0; int j = 0;
-                    while ( j < SM[i].rwnd.size) {
+                    while ( j < SM[i].rwnd.size && iter < RWND) {
                         if (msg_seq_no == base_seq) {
                             if (iter == SM[i].rwnd_markers[0]) {
                                 strcpy(SM[i].recv_buf[iter], buf+1);
@@ -113,7 +113,7 @@ void* R() {
                                 printf ("setting SM[%d].recv_buf[%d] to %s\n", i, iter, SM[i].recv_buf[iter]);
                                 fflush(stdout);
                                 #endif
-                                while (SM[i].recv_status[iter] != 0 && j < SM[i].rwnd.size) { 
+                                while (iter < RWND && SM[i].recv_status[iter] != 0 && j < SM[i].rwnd.size) { 
                                     SM[i].rwnd_markers[0] = (SM[i].rwnd_markers[0]+1)%RWND;
                                     if (SM[i].recv_status[(SM[i].rwnd_markers[1]+1)%RWND] == 0) SM[i].rwnd_markers[1] = (SM[i].rwnd_markers[1]+1)%RWND;
                                     else SM[i].rwnd.size -= 1;
@@ -138,14 +138,21 @@ void* R() {
                     if (flag == 0) { int len = sendACK(SM[i].socket_id, SM[i].recv_seq_no-1, SM[i].rwnd.size, i); }
                 }
                 else if (msg_seq_no == 0) {
+                    #ifdef DEBUG
+                    printf("got recieved %s \n", buf);
+                    fflush(stdout);
+                    #endif
                     int ack_value;
                     char ack_type[4];
                     int window_size;
                     int last_inorder_seq_num;
-                    ack_type[0] = buf[1]; ack_type[1] = buf[2]; ack_type[2] = buf[3]; ack_type[3] = buf[4];
-                    last_inorder_seq_num = (int)(buf[5]-'0');
-                    window_size = (int)(buf[6]-'0');
-                    
+                    ack_type[0] = buf[1]; ack_type[1] = buf[2]; ack_type[2] = buf[3]; ack_type[3] = buf[6];
+                    last_inorder_seq_num = (int)(buf[4]-'0');
+                    window_size = (int)(buf[5]-'0');
+                    #ifdef DEBUG
+                    printf("window now: (%d, %d) at i: %d\n",SM[i].swnd_markers[0],SM[i].swnd_markers[1],i);
+                    fflush(stdout);
+                    #endif
                     int iter = SM[i].swnd_markers[0]; int j = 0;
                     while (j < SM[i].swnd.size) {
                         if (SM[i].swnd.seq_no[iter] == last_inorder_seq_num) break;
@@ -158,23 +165,30 @@ void* R() {
                     }
                     int iter_upto = (iter+1)%SWND;
                     iter = SM[i].swnd_markers[0]; int k = 0;
-                    while (k <= j) {
+                    while (k <= j && iter < SWND) {
                         memset(SM[i].send_buf[iter], 0, MAXBLOCK);
                         SM[i].send_time[iter].tv_sec = 0;
                         SM[i].send_time[iter].tv_usec = 0;
                         SM[i].swnd.seq_no[iter] = -1;
                         iter = (iter+1)%SWND;
+                        k++;
                     }
+                    #ifdef DEBUG
+                    printf("updating window from (%d,%d) to ",SM[i].swnd_markers[0],SM[i].swnd_markers[1]);
+                    fflush(stdout);
+                    #endif
                     SM[i].swnd_markers[0] = iter_upto;
-                    SM[i].swnd_markers[1] = (SM[i].swnd_markers[0]+window_size)%SWND;
+                    SM[i].swnd_markers[1] = (SM[i].swnd_markers[0]+window_size-1)%SWND;
                     SM[i].swnd.size = window_size;
+                    #ifdef DEBUG
+                    printf("(%d,%d) in i: %d\n",SM[i].swnd_markers[0],SM[i].swnd_markers[1],i);
+                    fflush(stdout);
+                    #endif
                 }                
             }
             signall(sem_join);
             pop.sem_num = vop.sem_num = 0;
         }
-        
-
     }
     pthread_exit(NULL);
 }
@@ -199,10 +213,14 @@ void* S(){
                 pop.sem_num = vop.sem_num = 0;
                 continue;
             }
+            #ifdef DEBUG
+                printf("window in S (%d,%d) at i: %d\n",SM[i].swnd_markers[0],SM[i].swnd_markers[1],i);
+                fflush(stdout);
+            #endif
             long int duration = ((curr_time.tv_sec - SM[i].send_time[SM[i].swnd_markers[0]].tv_sec) * 1000000 + curr_time.tv_usec - SM[i].send_time[SM[i].swnd_markers[0]].tv_usec)/1000000;
             if ((SM[i].send_time[SM[i].swnd_markers[0]].tv_sec != 0 || SM[i].send_time[SM[i].swnd_markers[0]].tv_usec != 0) && duration > (int)T) {
                 int iter = SM[i].swnd_markers[0]; int j = 0;
-                while (j < SM[i].swnd.size) {
+                while (j < SM[i].swnd.size && iter < SWND) {
                     if (/*SM[i].send_status[iter] == 1 && */SM[i].is_alloted == 1 && SM[i].swnd.seq_no[iter] != -1) {
                         struct sockaddr_in addr;
                         addr.sin_family = AF_INET;
@@ -229,7 +247,7 @@ void* S(){
             }
             else {
                 int iter = SM[i].swnd_markers[0]; int j = 0;
-                while (j < SM[i].swnd.size) {
+                while (j < SM[i].swnd.size && iter < SWND) {
                     if (SM[i].send_time[iter].tv_sec == 0 && SM[i].send_time[iter].tv_usec == 0 && SM[i].is_alloted == 1 && SM[i].swnd.seq_no[iter] != -1) {
                         struct sockaddr_in addr;
                         addr.sin_family = AF_INET;
@@ -247,7 +265,7 @@ void* S(){
                         gettimeofday(&curr_time, NULL);
                         SM[i].send_time[iter] = curr_time;
                         #ifdef DEBUG
-                        printf("the seq. no. sent : %d and msg : %s at time: %ld\n", SM[i].swnd.seq_no[iter], temp_buf, SM[i].send_time[iter].tv_sec);
+                        printf("the seq no. sent : %d and msg : %s at time: %ld\n", SM[i].swnd.seq_no[iter], temp_buf, SM[i].send_time[iter].tv_sec);
                         fflush(stdout);
                         #endif
                     }

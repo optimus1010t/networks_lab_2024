@@ -7,3 +7,5 @@ need to write garbage collector
 Error bounding - ENOBUFS, errno during binding, ENOTBOUND (while sendto),  no space then ENOBUFS, ENOMSG
 
 how to check dest IP and dest port as we are sending it anywhere
+
+use memcpy instead of strcpy

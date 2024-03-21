@@ -34,11 +34,11 @@ int m_recvfrom (int sockfd, void *buf, size_t len) {
     pop.sem_num = vop.sem_num = sockfd;
     wait(sem_join);
     for (int i = 0; i < RWND; i++) {
-        #ifdef DEBUG
-        printf("recvfrom  at %d: %s\n",i,SM[sockfd].recv_buf[i]);
-        fflush(stdout);
-        #endif
         if (SM[sockfd].recv_status[i] == SM[sockfd].rwnd_markers[2]) {
+            #ifdef DEBUG
+            printf("recvfrom  at %d: %s\n",i,SM[sockfd].recv_buf[i]);
+            fflush(stdout);
+            #endif
             strcpy((char*)buf, SM[sockfd].recv_buf[i]);
             SM[sockfd].recv_status[i] = 0;
             SM[sockfd].rwnd_markers[2] = (SM[sockfd].rwnd_markers[2]+1)%MAXSEQNO;
