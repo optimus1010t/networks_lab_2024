@@ -376,7 +376,7 @@ int main() {
             int sockfd = socket(AF_INET, SOCK_DGRAM, 0);
             if (sockfd == -1) {
                 // perror("socket");
-                sock_info->err = 1;
+                sock_info->err = errno;
                 pop.sem_num = vop.sem_num = 0;
                 signall(sem_soc_create);
                 continue;

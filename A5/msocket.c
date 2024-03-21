@@ -124,7 +124,8 @@ int m_socket(int domain, int type, int protocol){
     pop.sem_num = vop.sem_num = 1;
     wait(sem_soc_create);
     errno = 0;
-    if (sock_info->err == 1) {
+    if (sock_info->err != 0) {
+        errno = sock_info->err;
         sock_info->err = 0;
         sock_info->sockfd=0;
         pop.sem_num = vop.sem_num = 2;
