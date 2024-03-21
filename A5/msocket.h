@@ -34,7 +34,7 @@
 
 #define SOCK_MTP 9999
 #define T 5
-#define p 0.5
+#define p 0.6
 
 struct ACKPacket {
     char message[4]; 
@@ -83,5 +83,7 @@ int m_bind(int sockfd, char* source_ip, int source_port, char* dest_ip, int dest
 int m_sendto(int sockfd, const void *buf, size_t len);
 int m_recvfrom(int sockfd, void *buf, size_t len);
 int m_close(int fd);
+
+void sighandler (int signum);
 
 int dropMessage(float pp);

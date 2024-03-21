@@ -277,6 +277,7 @@ int m_close(int fd){
 int dropMessage(float pp) { 
     signal(SIGINT, sighandler);
     // generate a random number between 0 and 1
+    srand(time(NULL));    
     float m_num = (float)rand()/(float)(RAND_MAX);
     if (m_num < pp) {
         return 1;

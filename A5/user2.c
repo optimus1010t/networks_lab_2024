@@ -37,13 +37,13 @@ int main(int argc, char const *argv[])
         perror("sendto failed");
         return -1;
     }
-    buf[17] = "Hello from user2";
-    if(m_sendto(sockfd, buf, strlen(buf)) < 0){
+    char buf1[] = "Hello from user2";
+    if(m_sendto(sockfd, buf1, strlen(buf)) < 0){
         perror("sendto failed");
         return -1;
     }
-    buf[17] = "Hello from user3";
-    if(m_sendto(sockfd, buf, strlen(buf)) < 0){
+    char buf2[] = "Hello from user3";
+    if(m_sendto(sockfd, buf2, strlen(buf)) < 0){
         perror("sendto failed");
         return -1;
     }

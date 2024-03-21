@@ -10,17 +10,17 @@
 
 // ???? check resending of the packets
 
-void sighandler (int signum) {
-    int shm_sockhand = shmget(ftok("msocket.h", SHM_MACRO), MAXSOCKETS*sizeof(struct m_socket_handler), 0777 | IPC_CREAT);
-    shmctl(shm_sockhand, IPC_RMID, NULL);
-    int sem_join = semget(ftok("msocket.h", SEM_MACRO), MAXSOCKETS, 0777 | IPC_CREAT);
-    semctl(sem_join, 0, IPC_RMID);
-    int shm_sock_info = shmget(ftok("msocket.h", SHM_MACRO2), sizeof(struct sock_info), 0777 | IPC_CREAT);
-    shmctl(shm_sock_info, IPC_RMID, NULL);
-    int sem_soc_create = semget(ftok("msocket.h", SEM_MACRO2), 3, 0777 | IPC_CREAT);
-    semctl(sem_soc_create, 0, IPC_RMID);
-    exit(0);
-}
+// void sighandler (int signum) {
+//     int shm_sockhand = shmget(ftok("msocket.h", SHM_MACRO), MAXSOCKETS*sizeof(struct m_socket_handler), 0777 | IPC_CREAT);
+//     shmctl(shm_sockhand, IPC_RMID, NULL);
+//     int sem_join = semget(ftok("msocket.h", SEM_MACRO), MAXSOCKETS, 0777 | IPC_CREAT);
+//     semctl(sem_join, 0, IPC_RMID);
+//     int shm_sock_info = shmget(ftok("msocket.h", SHM_MACRO2), sizeof(struct sock_info), 0777 | IPC_CREAT);
+//     shmctl(shm_sock_info, IPC_RMID, NULL);
+//     int sem_soc_create = semget(ftok("msocket.h", SEM_MACRO2), 3, 0777 | IPC_CREAT);
+//     semctl(sem_soc_create, 0, IPC_RMID);
+//     exit(0);
+// }
 
 // ???? signal handling to close all open sockets
 
@@ -89,7 +89,11 @@ void* R() {
                 printf("got recieved %s \n", buf);
                 fflush(stdout);
                 #endif
-                if (n == -1 /*|| dropMessage(p) == 1*/) {
+                if (n == -1 || dropMessage(p) == 1) {
+                    #ifdef DEBUG
+                    printf("dropping %s \n", buf);
+                    fflush(stdout);
+                    #endif
                     signall(sem_join);
                     pop.sem_num = vop.sem_num = 0;
                     continue;
@@ -131,7 +135,7 @@ void* R() {
                         base_seq = (base_seq+1)%MAXSEQNO;
                         if (base_seq == 0) base_seq = 1;
                     }
-                    if (flag == 0) { int len = sendACK(SM[i].socket_id, SM[i].recv_seq_no, SM[i].rwnd.size, i); }
+                    if (flag == 0) { int len = sendACK(SM[i].socket_id, SM[i].recv_seq_no-1, SM[i].rwnd.size, i); }
                 }
                 else if (msg_seq_no == 0) {
                     int ack_value;
@@ -156,7 +160,6 @@ void* R() {
                     iter = SM[i].swnd_markers[0]; int k = 0;
                     while (k <= j) {
                         memset(SM[i].send_buf[iter], 0, MAXBLOCK);
-                        // SM[i].send_status[iter] = 0;
                         SM[i].send_time[iter].tv_sec = 0;
                         SM[i].send_time[iter].tv_usec = 0;
                         SM[i].swnd.seq_no[iter] = -1;
@@ -196,7 +199,8 @@ void* S(){
                 pop.sem_num = vop.sem_num = 0;
                 continue;
             }
-            if (SM[i].send_time[SM[i].swnd_markers[0]].tv_usec != 0 && curr_time.tv_usec - SM[i].send_time[SM[i].swnd_markers[0]].tv_usec > (((int)T) * 1000000)) {
+            long int duration = ((curr_time.tv_sec - SM[i].send_time[SM[i].swnd_markers[0]].tv_sec) * 1000000 + curr_time.tv_usec - SM[i].send_time[SM[i].swnd_markers[0]].tv_usec)/1000000;
+            if ((SM[i].send_time[SM[i].swnd_markers[0]].tv_sec != 0 || SM[i].send_time[SM[i].swnd_markers[0]].tv_usec != 0) && duration > (int)T) {
                 int iter = SM[i].swnd_markers[0]; int j = 0;
                 while (j < SM[i].swnd.size) {
                     if (/*SM[i].send_status[iter] == 1 && */SM[i].is_alloted == 1 && SM[i].swnd.seq_no[iter] != -1) {
@@ -225,24 +229,12 @@ void* S(){
             }
             else {
                 int iter = SM[i].swnd_markers[0]; int j = 0;
-                // #ifdef DEBUG
-                // printf("no timeout and initial send marker : %d and final send marker : %d\n", SM[i].swnd_markers[0], SM[i].swnd_markers[1]);
-                // fflush(stdout);
-                // #endif
                 while (j < SM[i].swnd.size) {
-                    // #ifdef DEBUG
-                    // printf("i : %d send status : %d and send time : %d and is alloted : %d and seq no : %d\n",i, SM[i].send_status[iter], SM[i].send_time[iter].tv_usec, SM[i].is_alloted, SM[i].swnd.seq_no[iter]);
-                    // fflush(stdout);
-                    // #endif
-                    if (/*SM[i].send_status[iter] == 1 && */SM[i].send_time[iter].tv_usec == 0 && SM[i].is_alloted == 1 && SM[i].swnd.seq_no[iter] != -1) {
+                    if (SM[i].send_time[iter].tv_sec == 0 && SM[i].send_time[iter].tv_usec == 0 && SM[i].is_alloted == 1 && SM[i].swnd.seq_no[iter] != -1) {
                         struct sockaddr_in addr;
                         addr.sin_family = AF_INET;
                         addr.sin_port = htons(SM[i].dest_port);
                         addr.sin_addr.s_addr = inet_addr(SM[i].dest_ip_addr);
-                        #ifdef DEBUG
-                        printf("dest ip and port %s %d with socket %d\n", SM[i].dest_ip_addr, SM[i].dest_port, SM[i].socket_id);
-                        fflush(stdout);
-                        #endif
                         int len = sizeof(addr);
                         char temp_buf[MAXBUF]; memset(temp_buf, 0, MAXBUF);
                         temp_buf[0] = (char)(SM[i].swnd.seq_no[iter]+'0');
@@ -253,9 +245,9 @@ void* S(){
                             continue;
                         }
                         gettimeofday(&curr_time, NULL);
-                        SM[i].send_time[iter].tv_usec = curr_time.tv_usec;
+                        SM[i].send_time[iter] = curr_time;
                         #ifdef DEBUG
-                        printf("the seq. no. sent : %d and msg : %s at time: %d\n", SM[i].swnd.seq_no[iter], temp_buf, SM[i].send_time[iter].tv_usec);
+                        printf("the seq. no. sent : %d and msg : %s at time: %ld\n", SM[i].swnd.seq_no[iter], temp_buf, SM[i].send_time[iter].tv_sec);
                         fflush(stdout);
                         #endif
                     }
