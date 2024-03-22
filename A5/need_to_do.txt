@@ -2,9 +2,9 @@ additional headers in the MTP
 
 need to write garbage collector
 
-error bounding - ENOTBOUND (while sendto)
+error bounding - ENOTBOUND (while sendto)-> how to check dest IP and dest port as we are sending it anywhere
 
-how to check dest IP and dest port as we are sending it anywhere
+error check if length is > 1024 then notify
 
 use memcpy instead of strcpy
 
