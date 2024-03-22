@@ -60,7 +60,7 @@ int m_recvfrom (int sockfd, void *buf, size_t len) {
     return -1;
 }
 
-int m_sendto(int sockfd, const void *buf, size_t len) {  // ???? what checks for dest ip and port
+int m_sendto(int sockfd, const void *buf, size_t len, struct sockaddr* dest_addr) {  // ???? what checks for dest ip and port
     signal(SIGINT, sighandler);
     int sem_join = semget(ftok("msocket.h", SEM_MACRO), MAXSOCKETS, 0777 | IPC_CREAT);
     struct sembuf pop, vop;
@@ -69,6 +69,20 @@ int m_sendto(int sockfd, const void *buf, size_t len) {  // ???? what checks for
     pop.sem_op = -1; vop.sem_op = 1;
     int shm_sockhand = shmget(ftok("msocket.h", SHM_MACRO), MAXSOCKETS*sizeof(struct m_socket_handler), 0777 | IPC_CREAT);
     struct m_socket_handler* SM = (struct m_socket_handler*)shmat(shm_sockhand, NULL, 0);
+    if (len > MAXBLOCK) {
+        printf("Maximum length allowed is 1024");
+        return -1;
+    }
+    if (len < 0) {
+        printf("Length specified cannot be negative");
+        return -1;
+    }
+    // check if destination ip and port match 
+    if (strcmp(SM[sockfd].dest_ip_addr, inet_ntoa(((struct sockaddr_in*)dest_addr)->sin_addr)) != 0 || SM[sockfd].dest_port != ntohs(((struct sockaddr_in*)dest_addr)->sin_port)) {
+        errno = ENOTCONN;
+        return -1;
+    }
+    
     pop.sem_num = vop.sem_num = sockfd;
     wait(sem_join);
     errno = 0;
@@ -266,6 +280,7 @@ int m_close(int fd){
         SM[fd].rwnd.size = MAXWNDW;
         SM[fd].swnd.size = MAXWNDW;
         SM[fd].rwnd_markers[2] = 1;
+        SM[fd].flag_nospace = 0;
         signall(sem_join);
         sock_info->err = 0;
         sock_info->sockfd=0;

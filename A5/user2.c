@@ -27,27 +27,33 @@ int main(int argc, char const *argv[])
         perror("bind failed");
         return -1;
     }
+    struct sockaddr_in addr;
+    int addrlen = sizeof(addr);
+    addr.sin_addr.s_addr = inet_addr("127.0.0.1");
+    addr.sin_port = htons(8080);
+    addr.sin_family = AF_INET;
+
     printf("Bind done\n");
 
     sleep(10);
 
     char buf[] = "Hello from user1";
 
-    if(m_sendto(sockfd, buf, strlen(buf)) < 0){
+    if(m_sendto(sockfd, buf, strlen(buf), (struct sockaddr*)&addr) < 0){
         perror("sendto failed");
         return -1;
     }
     char buf1[] = "Hello from user2";
-    if(m_sendto(sockfd, buf1, strlen(buf)) < 0){
+    if(m_sendto(sockfd, buf1, strlen(buf), (struct sockaddr*)&addr) < 0){
         perror("sendto failed");
         return -1;
     }
     char buf2[] = "Hello from user3";
-    if(m_sendto(sockfd, buf2, strlen(buf)) < 0){
+    if(m_sendto(sockfd, buf2, strlen(buf), (struct sockaddr*)&addr) < 0){
         perror("sendto failed");
         return -1;
     }
-    // sleep(100);
+    sleep(100);
 
     // if(m_close(sockfd) < 0){
     //     perror("close failed");

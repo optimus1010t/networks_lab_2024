@@ -29,7 +29,7 @@ int main(int argc, char const *argv[])
 
     sleep(20);
     char buf[1024];
-    sleep(100);
+    // sleep(100);
 
     if(m_recvfrom(sockfd,buf,1024) < 0){
         perror("recvfrom failed");

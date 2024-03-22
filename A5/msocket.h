@@ -59,6 +59,7 @@ struct m_socket_handler {
     char recv_buf[RWND][MAXBLOCK];
     struct wnd rwnd;
     struct wnd swnd;
+    int flag_nospace;
 
     char dest_ip_addr[MAXIP]; // destination ip
     int dest_port; // destination port
@@ -82,7 +83,7 @@ struct sock_info {
 
 int m_socket(int domain, int type, int protocol);
 int m_bind(int sockfd, char* source_ip, int source_port, char* dest_ip, int dest_port);
-int m_sendto(int sockfd, const void *buf, size_t len);
+int m_sendto(int sockfd, const void *buf, size_t len, struct sockaddr* dest_addr);
 int m_recvfrom(int sockfd, void *buf, size_t len);
 int m_close(int fd);
 

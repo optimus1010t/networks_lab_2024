@@ -1,19 +1,18 @@
-additional headers in the MTP
-
-need to write garbage collector
-
-error bounding - ENOTBOUND (while sendto)-> how to check dest IP and dest port as we are sending it anywhere
-
-error check if length is > 1024 then notify
-
-use memcpy instead of strcpy
-
-check ENOBUFS, binding -> what to display exactly, ENOMSG, ENOBUFS -> sendto
-
-check the deletion and addition of new socket in every iteration of R
-
-add the flag nospace
+{{{ use memcpy instead of strcpy }}}
 
 vary p and report
 
 make the documentation.txt
+
+for the duplicated messages also, it sends an ACK message to the sender with the sequence number of the last in-order message received and the updated rwnd size.
+t updates the swnd accordingly (slides the window till the last message acknowledged if not a duplicate ACK)
+
+check ENOBUFS, binding -> what to display exactly, ENOMSG, ENOBUFS, ENOTBOUND and len issues -> sendto
+
+check the deletion and addition of new socket in every iteration of R
+
+check the flag nospace
+
+
+
+additional headers in the MTP --> do we even need them 

@@ -75,10 +75,18 @@ void* R() {
         m_timer.tv_sec = T;
         m_timer.tv_usec = 0;
         select(FD_SETSIZE, &fds, NULL, NULL, &m_timer);
-        if (m_timer.tv_sec == 0) continue;
+        
         for(int i=0; i<MAXSOCKETS; i++) {
             pop.sem_num = vop.sem_num = i;
             wait(sem_join);
+            if (m_timer.tv_sec == 0) {
+                if (SM[i].flag_nospace == 1 && SM[i].rwnd.size > 0){
+                    int len = sendACK(SM[i].socket_id, SM[i].recv_seq_no-1, SM[i].rwnd.size, i);
+                }
+                signall(sem_join);
+                pop.sem_num = vop.sem_num = 0;
+                continue;
+            }
             if (SM[i].is_alloted != 0 && FD_ISSET(SM[i].socket_id, &fds)) {
                 struct sockaddr_in addr;
                 int len = sizeof(addr);
@@ -100,7 +108,8 @@ void* R() {
                 // #endif
                 int msg_seq_no = MAXSEQNO;
                 msg_seq_no = (int)(buf[0]-'0');
-                if (msg_seq_no > 0 && msg_seq_no < MAXSEQNO) {    
+                if (msg_seq_no > 0 && msg_seq_no < MAXSEQNO) {
+                    if (SM[i].flag_nospace == 1)  SM[i].flag_nospace = 0;    
                     int base_seq = SM[i].recv_seq_no;
                     int iter = SM[i].rwnd_markers[0];
                     int flag = 0; int j = 0;
@@ -121,6 +130,7 @@ void* R() {
                                     iter = (iter+1)%RWND;
                                     j++;
                                 }
+                                if (SM[i].rwnd.size == 0) SM[i].flag_nospace = 1;
                                 int len = sendACK(SM[i].socket_id, (SM[i].recv_seq_no-1), SM[i].rwnd.size, i);
                                 flag = 1;
                             }
@@ -340,6 +350,7 @@ void* G(){
                 SM[i].rwnd.size = MAXWNDW;
                 SM[i].swnd.size = MAXWNDW;
                 SM[i].rwnd_markers[2] = 1;
+                SM[i].flag_nospace = 0;
             }            
             signall(sem_join);
             pop.sem_num = vop.sem_num = 0;
