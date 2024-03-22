@@ -282,7 +282,70 @@ void* S(){
 }
 
 void* G(){
-
+    signal(SIGINT, sighandler);
+    // timer would be much larger than the S thread timeout time
+    int sem_join = semget(ftok("msocket.h", SEM_MACRO), MAXSOCKETS, 0777 | IPC_CREAT);
+    struct sembuf pop, vop;
+    pop.sem_num = vop.sem_num = 0;
+    pop.sem_flg = vop.sem_flg = 0;
+    pop.sem_op = -1; vop.sem_op = 1;
+    int shm_sockhand = shmget(ftok("msocket.h", SHM_MACRO), MAXSOCKETS*sizeof(struct m_socket_handler), 0777 | IPC_CREAT);
+    struct m_socket_handler* SM = (struct m_socket_handler*)shmat(shm_sockhand, NULL, 0);
+    while (1) {
+        for(int i=0; i<MAXSOCKETS; i++) {
+            pop.sem_num = vop.sem_num = i;
+            wait(sem_join);
+            if (SM[i].is_alloted == 0) {
+                signall(sem_join);
+                pop.sem_num = vop.sem_num = 0;
+                continue;
+            }
+            // check if the process assc with the socket is still running
+            int status;
+            int check = waitpid(SM[i].process_id, &status, WNOHANG);
+            if (check == 0) {
+                signall(sem_join);
+                pop.sem_num = vop.sem_num = 0;
+                continue;
+            }
+            // if the process is not running then close the socket
+            #ifdef DEBUG
+            printf("checking at i: %d\n", i);
+            fflush(stdout);
+            #endif
+            struct stat sts; char path_to_process[1000]; memset(path_to_process, 0, 1000);
+            sprintf(path_to_process, "/proc/%d", SM[i].process_id);
+            if (stat(path_to_process, &sts) == -1 && errno == ENOENT) {
+                #ifdef DEBUG
+                printf("closing socket %d at i: %d\n", SM[i].socket_id, i);
+                fflush(stdout);
+                #endif
+                close(SM[i].socket_id);
+                SM[i].is_alloted = 0;
+                memset(SM[i].src_ip_addr, 0, MAXIP);
+                memset(SM[i].dest_ip_addr, 0, MAXIP);
+                memset(SM[i].send_buf, 0, SWND*(MAXBLOCK));
+                memset(SM[i].recv_buf, 0, RWND*(MAXBLOCK));
+                SM[i].send_seq_no = 1;
+                SM[i].recv_seq_no = 1;
+                int n = (int)MAXWNDW-1; int m = ((int)MAXSEQNO)/2;
+                SM[i].swnd_markers[0] = 0; SM[i].swnd_markers[1] = n > m ? m : n;
+                SM[i].rwnd_markers[0] = 0; SM[i].rwnd_markers[1] = n > m ? m : n;
+                for (int j=0; j<(RWND > SWND ? RWND : SWND); j++){
+                    SM[i].rwnd.seq_no[j] = -1;
+                    SM[i].swnd.seq_no[j] = -1;
+                    if (j < SWND ) { /*SM[i].send_status[j] = 0; */SM[i].send_time[j].tv_sec = 0; SM[i].send_time[j].tv_usec = 0; }
+                    if (j < RWND ) SM[i].recv_status[j] = 0;
+                }
+                SM[i].rwnd.size = MAXWNDW;
+                SM[i].swnd.size = MAXWNDW;
+                SM[i].rwnd_markers[2] = 1;
+            }            
+            signall(sem_join);
+            pop.sem_num = vop.sem_num = 0;
+        }
+        sleep((int)2*T);
+    }
     pthread_exit(NULL);
 }
 
@@ -358,12 +421,13 @@ int main() {
         SM[i].swnd.size = MAXWNDW;
         SM[i].rwnd_markers[2] = 1;
     }
-    pthread_t Rid, Sid;
+    pthread_t Rid, Sid, Gid;
     pthread_attr_t attr;
     pthread_attr_init(&attr);
     pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
     pthread_create(&Rid, &attr, R, NULL);
     pthread_create(&Sid, &attr, S, NULL);
+    pthread_create(&Gid, &attr, G, NULL);
     struct sembuf pop, vop;
     pop.sem_num = vop.sem_num = 0;
     pop.sem_flg = vop.sem_flg = 0;

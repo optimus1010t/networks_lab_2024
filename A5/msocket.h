@@ -22,6 +22,7 @@
 #include <pthread.h>
 #include <sys/sem.h>
 #include <errno.h>
+#include <sys/stat.h>
 
 #define MAXBLOCK 1024
 #define RWND 10
@@ -69,7 +70,7 @@ struct m_socket_handler {
     struct timeval send_time[SWND];
 
     int swnd_markers[2];  // starting and ending index of swnd
-    int rwnd_markers[3];  // starting, ending index and acked index of rwnd
+    int rwnd_markers[3];  // starting, ending index and sequence no. of the last message given to the user
 };
 
 struct sock_info {

@@ -47,12 +47,12 @@ int main(int argc, char const *argv[])
         perror("sendto failed");
         return -1;
     }
-    sleep(100);
+    // sleep(100);
 
-    if(m_close(sockfd) < 0){
-        perror("close failed");
-        return -1;
-    }
+    // if(m_close(sockfd) < 0){
+    //     perror("close failed");
+    //     return -1;
+    // }
 
     return 0;
 }
