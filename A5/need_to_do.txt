@@ -2,7 +2,7 @@ additional headers in the MTP
 
 need to write garbage collector
 
-Error bounding - ENOTBOUND (while sendto)
+error bounding - ENOTBOUND (while sendto)
 
 how to check dest IP and dest port as we are sending it anywhere
 
@@ -12,4 +12,8 @@ check ENOBUFS, binding -> what to display exactly, ENOMSG, ENOBUFS -> sendto
 
 check the deletion and addition of new socket in every iteration of R
 
-Add the flag nospace
+add the flag nospace
+
+vary p and report
+
+make the documentation.txt
