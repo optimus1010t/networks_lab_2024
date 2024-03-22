@@ -11,3 +11,5 @@ use memcpy instead of strcpy
 check ENOBUFS, binding -> what to display exactly, ENOMSG, ENOBUFS -> sendto
 
 check the deletion and addition of new socket in every iteration of R
+
+Add the flag nospace
