@@ -36,7 +36,7 @@
 
 #define SOCK_MTP 9999
 #define T 5
-#define p 0.6
+#define p 0.1
 
 struct ACKPacket {
     char message[4]; 

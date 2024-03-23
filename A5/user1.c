@@ -6,6 +6,7 @@
 // this will run on port 8081, and talk to user 1 on port 8080
 int main(int argc, char const *argv[])
 {
+    int sem = semget(ftok("user2.txt",5), 1, IPC_CREAT | 0666);
     int sockfd = m_socket(AF_INET, SOCK_MTP, 0);
     if(sockfd < 0){
         perror("socket creation failed");
@@ -28,39 +29,21 @@ int main(int argc, char const *argv[])
     printf("Bind done\n");
 
     sleep(20);
-    char buf[1024];
-    // sleep(100);
+    char buf[1024]; memset(buf, 0, 1024);
+    FILE *f = fopen("user1.txt", "w");
 
-    if(m_recvfrom(sockfd,buf,1024) < 0){
-        perror("recvfrom failed");
-        // return -1;
+    while (1) {
+        int n = m_recvfrom(sockfd,buf,1024);
+        if(n > 0){
+            write(fileno(f), buf, strlen(buf));
+            if (buf[strlen(buf)-1] == '\n') break;
+            memset(buf, 0, 1024);
+        }
     }
-
-    printf("Received: %s\n", buf);
-
-    sleep(10);
-
-    if(m_recvfrom(sockfd,buf,1024) < 0){
-        perror("recvfrom failed");
-        // return -1;
-    }
-
-    printf("Received: %s\n", buf);
-
-    sleep(10);
-
-    if(m_recvfrom(sockfd,buf,1024) < 0){
-        perror("recvfrom failed");
-        // return -1;
-    }
-
-    printf("Received: %s\n", buf);
-
-
-    if(m_close(sockfd) < 0){
-        perror("close failed");
-        // return -1;
-    }
-
+    struct sembuf vop;
+    vop.sem_num = 0;
+    vop.sem_op = 1;
+    vop.sem_flg = 0;
+    semop(sem, &vop, 1);
     return 0;
 }
