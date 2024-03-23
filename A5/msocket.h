@@ -24,19 +24,19 @@
 #include <errno.h>
 #include <sys/stat.h>
 
-#define MAXBLOCK 1024
-#define RWND 10
-#define SWND 5
+#define MAXBLOCK 15
+#define RWND 5
+#define SWND 10
 #define MAXIP 50
 #define MAXSEQNO 16
 #define MAXSOCKETS 25
 #define MAXWNDW 5
 
-#define MAXBUF 1030
+#define MAXBUF 16
 
 #define SOCK_MTP 9999
 #define T 5
-#define p 0.1
+#define p 0.5
 
 struct ACKPacket {
     char message[4]; 
@@ -56,7 +56,9 @@ struct m_socket_handler {
     char src_ip_addr[MAXIP];
     int src_port;
     char send_buf[SWND][MAXBLOCK];
+    int send_len[SWND];
     char recv_buf[RWND][MAXBLOCK];
+    int recv_len[RWND];
     struct wnd rwnd;
     struct wnd swnd;
     int flag_nospace;
@@ -83,8 +85,8 @@ struct sock_info {
 
 int m_socket(int domain, int type, int protocol);
 int m_bind(int sockfd, char* source_ip, int source_port, char* dest_ip, int dest_port);
-int m_sendto(int sockfd, const void *buf, size_t len, struct sockaddr* dest_addr);
-int m_recvfrom(int sockfd, void *buf, size_t len);
+int m_sendto(int sockfd, char *buf, size_t len, struct sockaddr* dest_addr);
+int m_recvfrom(int sockfd, char *buf, size_t len);
 int m_close(int fd);
 
 void sighandler (int signum);

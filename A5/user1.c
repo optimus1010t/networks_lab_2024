@@ -29,16 +29,19 @@ int main(int argc, char const *argv[])
     printf("Bind done\n");
 
     sleep(20);
-    char buf[1024]; memset(buf, 0, 1024);
+    char buf[MAXBLOCK]; memset(buf, 0, MAXBLOCK);
     FILE *f = fopen("user1.txt", "w");
 
     while (1) {
-        int n = m_recvfrom(sockfd,buf,1024);
+        int n = m_recvfrom(sockfd,buf,MAXBLOCK);
         if(n > 0){
-            write(fileno(f), buf, strlen(buf));
-            if (buf[strlen(buf)-1] == '\n') break;
-            memset(buf, 0, 1024);
+            write(fileno(f), buf, n);
+            if (buf[n-1] == '\n') break;
         }
+        else{
+            sleep(1);
+        }
+        memset(buf, 0, MAXBLOCK);
     }
     struct sembuf vop;
     vop.sem_num = 0;

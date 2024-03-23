@@ -39,12 +39,18 @@ int main(int argc, char const *argv[])
 
     sleep(10);
 
-    char buf[1024]; memset(buf, 0, 1024);
-    FILE *f = fopen("user2.txt", "r");
-    while (fgets(buf, 1024, f) != NULL) {
-        m_sendto(sockfd, buf, strlen(buf), (struct sockaddr *)&addr);
-        if (buf[strlen(buf)-1] == '\n') break;
-        memset(buf, 0, 1024);
+    char buf[MAXBLOCK]; memset(buf, 0, MAXBLOCK);
+    FILE *f = fopen("user2.txt", "r"); int n;
+    while (n=read(fileno(f), buf, MAXBLOCK)){
+        int check = m_sendto(sockfd, buf, n, (struct sockaddr *)&addr);
+        while(check < 0){
+            perror("send failed");
+            sleep(1);
+            check = m_sendto(sockfd, buf, n, (struct sockaddr *)&addr);
+        };
+        if (buf[n-1] == '\n') break;
+        memset(buf, 0, MAXBLOCK);
+        
     }
     struct sembuf pop;
     pop.sem_num = 0;
