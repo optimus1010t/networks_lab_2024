@@ -78,7 +78,7 @@ int m_recvfrom (int sockfd, char *buf, size_t len) {
     return -1;
 }
 
-int m_sendto(int sockfd, char *buf, size_t len, struct sockaddr* dest_addr) {  // added sockaddr to check for dest ip and port
+int m_sendto(int sockfd, char *buf, size_t len, char* dest_ip, int port) {  // added sockaddr to check for dest ip and port
     signal(SIGINT, sighandler);
     int sem_join = semget(ftok("msocket.h", SEM_MACRO), MAXSOCKETS, 0777 | IPC_CREAT);
     struct sembuf pop, vop;
@@ -96,7 +96,7 @@ int m_sendto(int sockfd, char *buf, size_t len, struct sockaddr* dest_addr) {  /
         return -1;
     }
     // check if destination ip and port match 
-    if (strcmp(SM[sockfd].dest_ip_addr, inet_ntoa(((struct sockaddr_in*)dest_addr)->sin_addr)) != 0 || SM[sockfd].dest_port != ntohs(((struct sockaddr_in*)dest_addr)->sin_port)) {
+    if (strcmp(SM[sockfd].dest_ip_addr, dest_ip) != 0 || SM[sockfd].dest_port != port) {
         errno = ENOTCONN;
         return -1;
     }

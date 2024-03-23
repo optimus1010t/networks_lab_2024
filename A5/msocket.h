@@ -24,7 +24,7 @@
 #include <errno.h>
 #include <sys/stat.h>
 
-#define MAXBLOCK 15
+#define MAXBLOCK 1024
 #define RWND 5
 #define SWND 10
 #define MAXIP 50
@@ -32,17 +32,11 @@
 #define MAXSOCKETS 25
 #define MAXWNDW 5
 
-#define MAXBUF 16
+#define MAXBUF 1025
 
 #define SOCK_MTP 9999
 #define T 5
-#define p 0.5
-
-struct ACKPacket {
-    char message[4]; 
-    int lastInorderSeqNum;
-    int windowSize;
-};
+#define p 0
 
 struct wnd {
     int size;
@@ -69,7 +63,7 @@ struct m_socket_handler {
     int send_seq_no; // next sequence number to be sent 
     int recv_seq_no; // next expected sequence number
 
-    int recv_status[RWND];  // 0: can be used, n: yet to be delivered with seq no. n // redundant ig ????
+    int recv_status[RWND];  // 0: can be used, n: yet to be delivered with seq no. n
     struct timeval send_time[SWND];
 
     int swnd_markers[2];  // starting and ending index of swnd
@@ -85,7 +79,7 @@ struct sock_info {
 
 int m_socket(int domain, int type, int protocol);
 int m_bind(int sockfd, char* source_ip, int source_port, char* dest_ip, int dest_port);
-int m_sendto(int sockfd, char *buf, size_t len, struct sockaddr* dest_addr);
+int m_sendto(int sockfd, char *buf, size_t len, char* dest_ip, int port);
 int m_recvfrom(int sockfd, char *buf, size_t len);
 int m_close(int fd);
 
