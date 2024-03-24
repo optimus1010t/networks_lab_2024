@@ -8,6 +8,14 @@
 #define wait(s) semop(s, &pop, 1) 
 #define signall(s) semop(s, &vop, 1)
 
+#ifdef COUNTING
+long int count_sendtoNORM = 0;
+long int count_recvfrom = 0;
+long int count_sendtoACK = 0;
+long int count_recvfromACK = 0;
+long int count_recvfromNORM = 0;
+#endif
+
 
 int sendACK(int sockfd, int lastInorderSeqNum, int windowSize, int index) {
     signal(SIGINT, sighandler);
@@ -69,6 +77,9 @@ void* R() {
                     int recv_send_ack = SM[i].recv_seq_no-1;
                     if (recv_send_ack == 0) recv_send_ack = MAXSEQNO-1;
                     int len = sendACK(SM[i].socket_id, recv_send_ack, SM[i].rwnd.size, i);
+                    #ifdef COUNTING
+                    count_sendtoACK++;
+                    #endif
                 }
                 signall(sem_join);
                 pop.sem_num = vop.sem_num = 0;
@@ -79,6 +90,9 @@ void* R() {
                 int len = sizeof(addr);
                 char buf[MAXBUF]; memset(buf, 0, MAXBUF);
                 int n = recvfrom(SM[i].socket_id, buf, MAXBUF, 0, (struct sockaddr*)&addr, &len);
+                #ifdef COUNTING
+                count_recvfrom++;
+                #endif
                 if (n == -1 || dropMessage(p) == 1) {
                     #ifdef DEBUG
                     printf("dropping : ");
@@ -93,6 +107,9 @@ void* R() {
                 int msg_seq_no = MAXSEQNO;
                 msg_seq_no = (int)(buf[0]-'0');
                 if (msg_seq_no > 0 && msg_seq_no < MAXSEQNO) {
+                    #ifdef COUNTING
+                    count_recvfromNORM++;
+                    #endif
                     if (SM[i].flag_nospace == 1)  SM[i].flag_nospace = 0;    
                     int base_seq = SM[i].recv_seq_no;
                     int iter = SM[i].rwnd_markers[0];
@@ -132,6 +149,9 @@ void* R() {
                                 int recv_send_ack = SM[i].recv_seq_no-1;
                                 if (recv_send_ack == 0) recv_send_ack = MAXSEQNO-1;
                                 int len = sendACK(SM[i].socket_id, recv_send_ack, SM[i].rwnd.size, i);
+                                #ifdef COUNTING
+                                count_sendtoACK++;
+                                #endif
                                 flag = 1;
                                 break;
                             }
@@ -160,9 +180,15 @@ void* R() {
                         int recv_send_ack = SM[i].recv_seq_no-1;
                         if (recv_send_ack == 0) recv_send_ack = MAXSEQNO-1;
                         int len = sendACK(SM[i].socket_id, recv_send_ack, SM[i].rwnd.size, i); 
+                        #ifdef COUNTING
+                        count_sendtoACK++;
+                        #endif
                     }
                 }
                 else if (msg_seq_no == 0) {
+                    #ifdef COUNTING
+                    count_recvfromACK++;
+                    #endif
                     #ifdef DEBUG
                     printf("got recieved : ");
                     for (int m = 0; m < n; m++) printf("%c", buf[m]);
@@ -293,6 +319,9 @@ void* S(){
                         if (n == -1) {
                             continue;
                         }
+                        #ifdef COUNTING
+                        count_sendtoNORM++;
+                        #endif
                         gettimeofday(&curr_time, NULL);
                         SM[i].send_time[iter] = curr_time;
                     }
@@ -317,6 +346,9 @@ void* S(){
                             iter = (iter+1)%SWND;
                             continue;
                         }
+                        #ifdef COUNTING
+                        count_sendtoNORM++;
+                        #endif
                         gettimeofday(&curr_time, NULL);
                         SM[i].send_time[iter] = curr_time;
                         #ifdef DEBUG
@@ -400,6 +432,13 @@ void* G(){
                 SM[i].swnd.size = MAXWNDW;
                 SM[i].rwnd_markers[2] = 1;
                 SM[i].flag_nospace = 0;
+                #ifdef COUNTING
+                printf("Total m_sendto NORM calls sent: %ld\n", count_sendtoNORM);
+                // printf("Total m_recvfrom calls sent: %ld\n", count_recvfrom);
+                printf("Total m_sendto ACK calls sent: %ld\n", count_sendtoACK);
+                // printf("Total m_recvfrom ACK calls sent: %ld\n", count_recvfromACK);
+                // printf("Total m_recvfrom NORM calls sent: %ld\n", count_recvfromNORM);
+                #endif
             }            
             signall(sem_join);
             pop.sem_num = vop.sem_num = 0;

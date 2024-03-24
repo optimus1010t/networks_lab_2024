@@ -6,8 +6,8 @@
 
 int main(int argc, char const *argv[])
 {
-    // int sem = semget(ftok("tcp_udp.png",5), 1, IPC_CREAT | 0666);
-    // semctl(sem, 0, SETVAL, 0);
+    int sem = semget(ftok("tcp_udp.png",5), 1, IPC_CREAT | 0666);
+    semctl(sem, 0, SETVAL, 0);
     int sockfd = m_socket(AF_INET, SOCK_MTP, 0);
     if(sockfd < 0){
         perror("socket creation failed");
@@ -45,12 +45,12 @@ int main(int argc, char const *argv[])
         if (buf[n-1] == '\n') break;
         memset(buf, 0, MAXBLOCK);        
     }
-    sleep(1000); // can be done by semaphores if on the same device as shown by commenting it out, done so that buffer is not cleared and it is still allocated until all the packets have been sent
-    // struct sembuf pop;
-    // pop.sem_num = 0;
-    // pop.sem_op = -1;
-    // pop.sem_flg = 0;
-    // semop(sem, &pop, 1); 
+    // sleep(1000); // can be done by semaphores if on the same device as shown by commenting it out, done so that buffer is not cleared and it is still allocated until all the packets have been sent
+    struct sembuf pop;
+    pop.sem_num = 0;
+    pop.sem_op = -1;
+    pop.sem_flg = 0;
+    semop(sem, &pop, 1); 
     printf("Total m_sendto calls sent: %d\n", count_send);
     return 0;
 }

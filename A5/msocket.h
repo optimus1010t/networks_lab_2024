@@ -36,7 +36,7 @@
 
 #define SOCK_MTP 9999
 #define T 5
-#define p 0
+#define p 0.3
 
 struct wnd {
     int size;
