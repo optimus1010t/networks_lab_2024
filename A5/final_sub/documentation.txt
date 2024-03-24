@@ -1,0 +1,92 @@
+VARYING p :-
+
+Value of p              Total sendto calls                  Total receive from calls made
+
+    0.5                         449                                     510
+    0.45                        375                                     396
+    0.4                         327                                     353
+    0.35                        291                                     312
+    0.3                         296                                     327
+    0.25                        306                                     327
+    0.2                         229                                     244
+    0.15                        258                                     273
+    0.1                         234                                     248
+    0.05                        229                                     249
+    0.0                         211                                     225               
+
+
+
+THE STRUCTURES :-
+
+Now for the struct m_socket_handler :-
+
+int is_alloted                  ::  tells us whether or not this socket is alloted to some process
+pid_t process_id                ::  stores the process id of to which the socket is alloted used to check
+int socket_id                   ::  stores the corresponding UDP socket ID underlying the MTP SOCKET
+char src_ip_addr[MAXIP]         ::  stores the source IP address
+int src_port                    ::  stores the source port
+char send_buf[SWND][MAXBLOCK]   ::  send buffer to store messages before they are sent out to the network
+int send_len[SWND]              ::  length of each such message to be sent so as to know how much bytes to memcpy
+char recv_buf[RWND][MAXBLOCK]   ::  recieve buffer to store the messages before giving them to the user
+int recv_len[RWND]              ::  length of each such message received so as to know how much bytes to memcpy
+struct wnd rwnd                 ::  a struct to store the receive window information
+struct wnd swnd                 ::  a struct to store the send window information
+int flag_nospace                ::  flag to specify that an ACK with specifying window size 0 was sent last
+char dest_ip_addr[MAXIP]        ::  stores the destination IP address
+int dest_port                   ::  stores the destination port
+int send_seq_no                 ::  next sequence number of the message to be sent
+int recv_seq_no                 ::  next expected sequence number in the m_recvfrom call
+int recv_status[RWND]           ::  structure to store the receive status of the messages that is 0: delivered to the user, n: yet to be delivered with seq no.
+struct timeval send_time[SWND]  ::  array of the structure timeval to store the send timings of each of the messages
+int swnd_markers[2]             ::  starting and ending index of send window
+                                    This can also be found using the struct swnd but will have to parse the entire array of seq_no to do so, which takes up more time.
+int rwnd_markers[3];            ::  starting, ending index of receive window and sequence no. of the last message given to the user
+                                    This can also be found using the struct rwnd but will have to parse the entire array of seq_no to do so, which takes up more time.
+
+
+
+Now for the struct wnd :-
+
+int size                                ::  the current size of the window
+int seq_no[RWND > SWND ? RWND : SWND]   ::  array showing the sequence numbers of messages not yet ACKed at the same position as in the respective buffers, if no 
+                                            message there then set to -1
+
+
+
+Now for the struct sock_info :-     Used in m_socket,m_bind and m_close calls
+
+int sockfd                      ::  socket_id to close  
+char src_ip[MAXIP]              ::  source IP to bind the UDP socket to
+int src_port                    ::  source port to bind the UDP socket to
+int err                         ::  error flag set to 1 if error is detected in any of the aforementioned calls
+
+
+THE FUNCTIONS :-
+
+int m_socket(int domain, int type, int protocol)
+::  returns the free index according to the SM shared memory and creates a underlying UDP socket
+
+int m_bind(int sockfd, char* source_ip, int source_port, char* dest_ip, int dest_port)
+::  returns 0 on successfully binding a the socket to the specified port and ip (binding teh underlying UDP socket too) and storing the destination ip and port
+    returns -1 on error and errno set
+
+int m_sendto(int sockfd, char *buf, size_t len, char* dest_ip, int port)
+::  returns the number of bytes of the message sent over the sockfd after checking if the passed destination ip and port matches with the ones specified in the bind call.
+    reutrns -1 on error with suitable errno set and 
+
+int m_recvfrom(int sockfd, char *buf, size_t len)
+::  returns the number of bytes received, here the the destination ip and port are not passed and even the check for them is not made as it was specified in the
+    assignment that a device can only converse to one device at the moment using the samme IP and port
+
+int m_close(int fd)
+::  closes the MTP socket (that is the underlying UDP socket) and de-allocates the socket and clears all the buffers
+    returns 0 on successfully and -1, if some error occurs
+
+void sighandler (int signum)
+::  to handle the interrupt signal and remove the shared memory and semaphores before terminating the code
+
+int dropMessage(float pp)
+::  randomly drop thee messages to simulate real life networks
+
+int sendACK(int sockfd, int lastInorderSeqNum, int windowSize, int index)
+::  to send the ACK using the underlying UDP socket sockfd, with the required informations and the index to the SM 

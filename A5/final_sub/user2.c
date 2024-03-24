@@ -21,7 +21,7 @@ int main(int argc, char const *argv[])
 
     // sleep(20);
     char buf[MAXBLOCK]; memset(buf, 0, MAXBLOCK);
-    FILE *f = fopen("user222.txt", "w");
+    FILE *f = fopen("user2.txt", "w");
     int count_recv = 0;
     while (1) {
         int n = m_recvfrom(sockfd,buf,MAXBLOCK);
