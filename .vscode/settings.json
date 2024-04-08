@@ -58,6 +58,7 @@
   "C_Cpp_Runner.msvcSecureNoWarnings": false,
   "files.associations": {
     "*.ejs": "html",
-    "*.tcc": "c"
+    "*.tcc": "c",
+    "time.h": "c"
   }
 }
