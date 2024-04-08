@@ -54,6 +54,9 @@ int isValidDomain(const char *domain) {
     return 1;
 }
 
+// Protocol 254 in the context of networking and sockets refers to the "Reserved" protocol in 
+// the IPv4 protocol suite. It's reserved for experimentation and testing according to the 
+// Internet Assigned Numbers Authority (IANA).
 
 
 int main() {
@@ -132,6 +135,12 @@ int main() {
         if (FD_ISSET(0, &readfds)) {
             char input[257]; memset(input, 0, 257);
             fgets(input, 256, stdin);
+
+            // if we get EXIT then close and exit
+            if (strcmp(input, "EXIT\n") == 0) {
+                close(sockfd);
+                break;
+            }
             
             char domains[8][32]; memset(domains, 0, 8 * 32);
             int domain_len[8]; for (int i = 0; i < 8; i++) domain_len[i] = 0;
@@ -338,4 +347,5 @@ int main() {
             free(curr);
         }
     }
+    exit(0);
 }
