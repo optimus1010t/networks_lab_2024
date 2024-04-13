@@ -131,7 +131,7 @@ int main(int argc, char*argv[])
         // tv.tv_sec = 15;
         // tv.tv_usec = 0;
         int time_rem = select(nfds, &fds, 0, 0, 0);
-        // if (time_rem == 0) {
+        // if (tv.tv_sec == 0) {
         //     for (i = 0; i < NO_OF_CLIENTS; i++) {
         //         if (client_isthere[i] != -1){
         //             close(newsockfd[i]);

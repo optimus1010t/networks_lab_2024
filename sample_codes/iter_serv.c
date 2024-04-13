@@ -23,30 +23,18 @@
 // In accordance wirh RFC 5321 and RFC 1939
 int main(int argc, char*argv[])
 {
-    int sockfd = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
-    if (sockfd < 0) {
-        perror("socket");
-        exit(1);
+    char filename[] = "a.out";
+    FILE* file;
+
+    // Attempt to open the file for reading
+    file = fopen(filename, "r"); // if it is "w" then would just create the file if it doesnt exist
+
+    if (file != NULL) {
+        printf("File exists!\n");
+        // Close the file if it was successfully opened
+        fclose(file);
+    } else {
+        printf("File does not exist!\n");
     }
-    struct icmp {
-        uint8_t type;
-        uint8_t code;
-        uint16_t checksum;
-        uint16_t id;
-        uint16_t seq;
-    } icmp;
-    struct ip {
-        uint8_t vhl;
-        uint8_t tos;
-        uint16_t len;
-        uint16_t id;
-        uint16_t off;
-        uint8_t ttl;
-        uint8_t protocol;
-        uint16_t checksum;
-        struct in_addr src;
-        struct in_addr dst;
-    } ip;
-    
 }
 
